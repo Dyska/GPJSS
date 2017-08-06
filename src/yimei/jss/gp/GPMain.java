@@ -25,13 +25,14 @@ public class GPMain {
         List<String> gpRunArgs = new ArrayList<>();
         gpRunArgs.add("-file");
         //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/simplegp/simplegp.params");
-        gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp.params");
+        gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/simplegp/simplegp-dynamic.params");
+        //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp.params");
         gpRunArgs.add("-p");
 
         List<String> fileNames = getFileNames(new ArrayList(), Paths.get(path), ".fjs");
 
         boolean isTest = true;
-        int maxTests = 5;
+        int maxTests = 1;
 
         for (String fileName: fileNames) {
             //worry about saving output later

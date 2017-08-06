@@ -71,8 +71,6 @@ public class RuleOptimizationProblem extends GPProblem implements SimpleProblemF
         fitnesses.add(indi.fitness);
         evaluationModel.evaluate(fitnesses, rules, state);
 
-//        sequencingRule.calcFitness(indi.fitness, state, trainSet, objectives);
-
         indi.evaluated = true;
     }
 }
