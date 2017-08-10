@@ -271,7 +271,7 @@ public class GridResultCleaner {
     }
 
     public static void main(String args[]) {
-        GridResultCleaner grc = new GridResultCleaner("fjss_hardcoded_results_updated", 1, true );
+        GridResultCleaner grc = new GridResultCleaner("fjss_simple_fixed", 1, true );
         grc.cleanResults();
     }
 }

@@ -18,7 +18,7 @@ state = yimei.jss.gp.GPRuleEvolutionState
 finish = ec.simple.SimpleFinisher
 exch = ec.simple.SimpleExchanger
 breed =	ec.simple.SimpleBreeder
-eval = yimei.jss.surrogate.SurrogateEvaluator
+eval = ec.simple.SimpleEvaluator
 stat = ec.simple.SimpleStatistics
 stat.file = $out.stat
 #stat.num-children = 1
@@ -34,7 +34,7 @@ pop.subpops = 1
 pop.subpop.0 = ec.Subpopulation
 pop.subpop.0.size =	1024
 
-breed.elite.0 = 10
+breed.elite.0 = 1
 
 # ==============================
 # GP general parameters
@@ -215,11 +215,13 @@ gp.fs.0.func.6.nc = nc2
 
 eval.problem = yimei.jss.ruleoptimisation.RuleOptimizationProblem
 eval.problem.data = yimei.jss.gp.data.DoubleData
-eval.problem.eval-model = yimei.jss.ruleevaluation.HalfShopEvaluationModel
+eval.problem.eval-model = yimei.jss.ruleevaluation.SimpleEvaluationModel
 eval.problem.eval-model.objectives = 1
-eval.problem.eval-model.objectives.0 = makespan
+eval.problem.eval-model.objectives.0 = mean-flowtime
 eval.problem.eval-model.sim-models = 1
 eval.problem.eval-model.sim-models.0.util-level = 0.85
-eval.problem.eval-model.rotate-sim-seed = false
+eval.problem.eval-model.rotate-sim-seed = true
+eval.problem.eval-model.sim-models.0.num-jobs = 2500
+eval.problem.eval-model.sim-models.0.warmup-jobs = 500
 
 terminals-from = relative

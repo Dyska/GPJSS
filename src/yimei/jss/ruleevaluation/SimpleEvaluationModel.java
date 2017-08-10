@@ -93,7 +93,7 @@ public class SimpleEvaluationModel extends AbstractEvaluationModel {
             int warmupJobs = state.parameters.getIntWithDefault(p, null, 1000);
             // Min number of operations
             p = b.push(P_SIM_MIN_NUM_OPERATIONS);
-            int minNumOperations = state.parameters.getIntWithDefault(p, null, 2);
+            int minNumOperations = state.parameters.getIntWithDefault(p, null, 1);
             // Max number of operations
             p = b.push(P_SIM_MAX_NUM_OPERATIONS);
             int maxNumOperations = state.parameters.getIntWithDefault(p, null, numMachines);
@@ -113,19 +113,18 @@ public class SimpleEvaluationModel extends AbstractEvaluationModel {
             p = b.push(P_SIM_REPLICATIONS);
             int rep = state.parameters.getIntWithDefault(p, null, 1);
             Simulation simulation = null;
-            if (this instanceof HalfShopEvaluationModel) {
+            //only expecting filePath parameter for Static FJSS, so can use this
+            String filePath = state.parameters.getString(new Parameter("filePath"), null);
+            if (filePath == null) {
                 //Dynamic Simulation
                 simulation = new DynamicSimulation(simSeed,
                         null, null, numMachines, numJobs, warmupJobs,
                         minNumOperations, maxNumOperations, minNumOptions, maxNumOptions,
                         utilLevel, dueDateFactor, false);
             } else {
-                String filePath = state.parameters.getString(new Parameter("filePath"), null);
                 FlexibleStaticInstance instance = FlexibleStaticInstance.readFromAbsPath(filePath);
-
                 simulation = new StaticSimulation(null, null, instance);
             }
-
             trainSimulations.add(simulation);
             replications.add(new Integer(rep));
         }

@@ -499,11 +499,13 @@ public class SimpleBreeder extends Breeder
             if (numElites(state, sub) == 1) {
                 Individual[] oldinds = state.population.subpops[sub].individuals;
                 Individual[] inds = newpop.subpops[sub].individuals;
-                int otherSubPop = (sub+1)%2;
-                Individual[] oldindsOtherSubpop = state.population.subpops[otherSubPop].individuals;
-                //want to also insert context of best individual
-                Individual otherCollab = (Individual) oldindsOtherSubpop[bestIndex[otherSubPop]].fitness.getContext()[sub].clone();
-                inds[inds.length-2] = otherCollab;
+                if (state.population.subpops.length > 1) {
+                    int otherSubPop = (sub+1)%2;
+                    Individual[] oldindsOtherSubpop = state.population.subpops[otherSubPop].individuals;
+                    //want to also insert context of best individual
+                    Individual otherCollab = (Individual) oldindsOtherSubpop[bestIndex[otherSubPop]].fitness.getContext()[sub].clone();
+                    inds[inds.length-2] = otherCollab;
+                }
                 Individual elite = (Individual)(oldinds[bestIndex[sub]].clone());
                 inds[inds.length-1] = elite;
             }

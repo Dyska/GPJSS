@@ -224,9 +224,6 @@ public class DynamicSimulation extends Simulation {
             int[] route = randomDataGenerator.nextPermutation(numWorkCenters, numOptions);
             for (int j = 0; j < numOptions; ++j) {
                 double procTime = procTimeSampler.next(randomDataGenerator);
-                if (j > route.length) {
-                    System.out.println("wut");
-                }
                 o.addOperationOption(new OperationOption(o,j,procTime,systemState.getWorkCenter(route[j])));
                 if (procTime > longestProcTime) {
                     longestProcTime = procTime;
@@ -368,6 +365,6 @@ public class DynamicSimulation extends Simulation {
             double utilLevel,
             double dueDateFactor) {
         return new DynamicSimulation(seed, sequencingRule, routingRule, numWorkCenters, numJobsRecorded,
-                warmupJobs, 2, numWorkCenters, 1, numWorkCenters, utilLevel, dueDateFactor, false);
+                warmupJobs, 1, numWorkCenters, 1, numWorkCenters, utilLevel, dueDateFactor, false);
     }
 }

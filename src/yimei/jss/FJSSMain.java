@@ -155,7 +155,7 @@ public class FJSSMain {
 
     public static void main(String[] args) {
         //path may be a directory path or a file path
-        //example file path: Brandimarte_Data/Text/Mk02.fjs
+        //example file path: Brandimarte_Data/Text/Mk08.fjs
         String path = "";
         if (args.length > 0) {
             //allow more specific folder or file paths to be used
@@ -170,10 +170,11 @@ public class FJSSMain {
 
         objectives.add(Objective.MAKESPAN);
 
-        //routingRules.add(GPRule.readFromLispExpression(RuleType.ROUTING,"         (- (+ (- (* NOR DD) (- NIQ WIQ)) (max (- MRT SL) (- (* PT DD) (+ NOR DD)))) (min (max (/ t FDD) (max W NPT)) (- (min PT MRT) (+ PT WIQ))))\n"));
+        //routingRules.add(GPRule.readFromLispExpression(RuleType.ROUTING," (+ (max WIQ DD) (- (/ AT PT) (min SL NOR)))"));
 
         routingRules.add(new SBT(RuleType.ROUTING));
-        sequencingRules.add(GPRule.readFromLispExpression(RuleType.SEQUENCING,"(+ (* SL t) (+ t WKR))"));
+        //sequencingRules.add(GPRule.readFromLispExpression(RuleType.SEQUENCING," (+ (min (min (max (min WIQ t) (max NOR SL)) MRT) (max DD WKR)) (* (+ SL SL) (- WIQ PT)))"));
+        sequencingRules.add(GPRule.readFromLispExpression(RuleType.SEQUENCING," (/ WKR rDD)"));
 //        routingRules.add(GPRule.readFromLispExpression(RuleType.ROUTING," (max (max NINQ PT) (max (- (/ (min t NINQ)" +
 //                " (max AT W)) (min (max NOR FDD) (* MRT (- SL W)))) AT))"));
 

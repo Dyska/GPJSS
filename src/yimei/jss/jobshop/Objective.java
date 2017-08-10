@@ -59,7 +59,12 @@ public enum Objective {
         switch (this) {
             case MAKESPAN:
                 return new FCFS(RuleType.SEQUENCING);
-//            case MEAN_FLOWTIME:
+            case MEAN_FLOWTIME:
+                return new FCFS(RuleType.SEQUENCING);
+            case MAX_FLOWTIME:
+                return new FCFS(RuleType.SEQUENCING);
+            case MEAN_WEIGHTED_FLOWTIME:
+                return new FCFS(RuleType.SEQUENCING);
 //                return new TwoPTplusWINQplusNPT(RuleType.SEQUENCING);
             case MEAN_TARDINESS:
                 return new ATC(RuleType.SEQUENCING);
