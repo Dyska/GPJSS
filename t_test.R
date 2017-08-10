@@ -2,7 +2,7 @@
 #Each FJSS is run 30 times for each evolution option,
 #Will be looking at data in /cleaned/ folders
 #Will have to specify two folder names within cleaned
-#eg: Rscript paired_t_test.R fjss_coevolve_fixed fjss_hardcoded_results_updated
+#eg: Rscript t_test.R fjss_coevolve_fixed fjss_simple_fixed
 
 args = commandArgs(trailingOnly=TRUE)
 if (length(args) != 2) {
@@ -10,13 +10,13 @@ if (length(args) != 2) {
 }
 
 a = "fjss_coevolve_fixed"
-b = "fjss_hardcoded_results_updated"
+b = "fjss_simple_fixed"
 
 base_directory = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/"
 grid_directory = paste(base_directory, "grid_results/",sep="")
 input_dir_a = paste(grid_directory,"cleaned/",a,sep="")
 input_dir_b = paste(grid_directory,"cleaned/",b,sep="")
-output_dir = paste(grid_directory,"processed/paired_t_tests/",sep="")
+output_dir = paste(grid_directory,"processed/t_tests/",sep="")
 output_file = paste(a,"-",b,"-results.csv",sep="")
 
 #First, read all filenames from one of the input directories
@@ -24,13 +24,13 @@ setwd(input_dir_a)
 filenames = list.files(input_dir_a)
 
 #create the matrix which will store all our results
-output_matrix = matrix(, nrow = length(filenames), ncol = 2)
-colnames(output_matrix) = c("filename","p-value")
+output_matrix = matrix(, nrow = length(filenames), ncol = 3)
+colnames(output_matrix) = c("filename","p-value","p<0.05")
 
 #lets process our results, and save them in the matrix we made
 
 p_value_fn <- function(a, b) {
-  obj<-try(t.test(a,b,paired=TRUE), silent=TRUE)
+  obj<-try(t.test(a,b,paired=FALSE), silent=TRUE)
   if (is(obj, "try-error")) return(NA) else return(obj$p.value)
 }  
 
@@ -46,9 +46,9 @@ for (filename in filenames) {
     #should be a filename with that exact same name
     gp_results_b = read.csv(filename,header=TRUE)
     best_makespans_b = as.numeric(unlist(gp_results_b["Best"]))
-  
+    
     p = p_value_fn(best_makespans_a,best_makespans_b)
-    output_matrix[i,] = c(filename,p)  
+    output_matrix[i,] = c(filename,p,p<0.05)  
     i = i + 1
   }
 }
