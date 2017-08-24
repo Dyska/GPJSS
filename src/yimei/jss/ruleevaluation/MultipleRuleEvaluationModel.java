@@ -10,6 +10,7 @@ import yimei.jss.jobshop.FlexibleStaticInstance;
 import yimei.jss.jobshop.Objective;
 import yimei.jss.jobshop.SchedulingSet;
 import yimei.jss.rule.AbstractRule;
+import yimei.jss.simulation.DynamicSimulation;
 import yimei.jss.simulation.Simulation;
 import yimei.jss.simulation.StaticSimulation;
 
@@ -35,6 +36,10 @@ public class MultipleRuleEvaluationModel extends AbstractEvaluationModel{
     public final static String P_SIM_NUM_MACHINES = "num-machines";
     public final static String P_SIM_NUM_JOBS = "num-jobs";
     public final static String P_SIM_WARMUP_JOBS = "warmup-jobs";
+    public final static String P_SIM_MIN_NUM_OPERATIONS = "min-num-operations";
+    public final static String P_SIM_MAX_NUM_OPERATIONS = "max-num-operations";
+    public final static String P_SIM_UTIL_LEVEL = "util-level";
+    public final static String P_SIM_DUE_DATE_FACTOR = "due-date-factor";
     public final static String P_SIM_REPLICATIONS = "replications";
 
     protected SchedulingSet schedulingSet;
@@ -84,15 +89,36 @@ public class MultipleRuleEvaluationModel extends AbstractEvaluationModel{
             int numJobs = state.parameters.getIntWithDefault(p, null, 5000);
             // Number of warmup jobs
             p = b.push(P_SIM_WARMUP_JOBS);
+            int warmupJobs = state.parameters.getIntWithDefault(p, null, 1000);
+            // Min number of operations
+            p = b.push(P_SIM_MIN_NUM_OPERATIONS);
+            int minNumOperations = state.parameters.getIntWithDefault(p, null, 1);
+            // Max number of operations
+            p = b.push(P_SIM_MAX_NUM_OPERATIONS);
+            int maxNumOperations = state.parameters.getIntWithDefault(p, null, numMachines);
+            // Utilization level
+            p = b.push(P_SIM_UTIL_LEVEL);
+            double utilLevel = state.parameters.getDoubleWithDefault(p, null, 0.85);
+            // Due date factor
+            p = b.push(P_SIM_DUE_DATE_FACTOR);
+            double dueDateFactor = state.parameters.getDoubleWithDefault(p, null, 4.0);
             // Number of replications
             p = b.push(P_SIM_REPLICATIONS);
             int rep = state.parameters.getIntWithDefault(p, null, 1);
 
+            Simulation simulation = null;
+            //only expecting filePath parameter for Static FJSS, so can use this
             String filePath = state.parameters.getString(new Parameter("filePath"), null);
-            FlexibleStaticInstance instance = FlexibleStaticInstance.readFromAbsPath(filePath);
-
-            Simulation simulation = new StaticSimulation(null, null, instance);
-
+            if (filePath == null) {
+                //Dynamic Simulation
+                simulation = new DynamicSimulation(simSeed,
+                        null, null, numMachines, numJobs, warmupJobs,
+                        minNumOperations, maxNumOperations,
+                        utilLevel, dueDateFactor, false);
+            } else {
+                FlexibleStaticInstance instance = FlexibleStaticInstance.readFromAbsPath(filePath);
+                simulation = new StaticSimulation(null, null, instance);
+            }
             trainSimulations.add(simulation);
             replications.add(new Integer(rep));
         }
@@ -137,17 +163,17 @@ public class MultipleRuleEvaluationModel extends AbstractEvaluationModel{
 
             col++;
 
-            for (int k = 1; k < schedulingSet.getReplications().get(j); k++) {
-                simulation.rerun();
-
-                for (int i = 0; i < objectives.size(); i++) {
-                    double normObjValue = simulation.objectiveValue(objectives.get(i))
-                            / schedulingSet.getObjectiveLowerBound(i, col);
-                    fitnesses[i] += normObjValue;
-                }
-
-                col++;
-            }
+//            for (int k = 1; k < schedulingSet.getReplications().get(j); k++) {
+//                simulation.rerun();
+//
+//                for (int i = 0; i < objectives.size(); i++) {
+//                    double normObjValue = simulation.objectiveValue(objectives.get(i))
+//                            / schedulingSet.getObjectiveLowerBound(i, col);
+//                    fitnesses[i] += normObjValue;
+//                }
+//
+//                col++;
+//            }
 
             simulation.reset();
         }

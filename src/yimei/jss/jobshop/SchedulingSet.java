@@ -94,7 +94,6 @@ public class SchedulingSet {
 
                 for (int k = 1; k < replications.get(j); k++) {
                     simulation.rerun();
-//                    System.out.println(simulation.workCenterUtilLevelsToString());
                     value = simulation.objectiveValue(objective);
                     objectiveLowerBoundMtx.setEntry(i, col, value);
                     col ++;

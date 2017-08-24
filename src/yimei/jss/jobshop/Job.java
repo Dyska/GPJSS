@@ -3,6 +3,7 @@ package yimei.jss.jobshop;
 import yimei.jss.simulation.event.ProcessFinishEvent;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -53,17 +54,17 @@ public class Job implements Comparable<Job> {
         return operations;
     }
 
-//    public List<ProcessFinishEvent> getProcessFinishEvents() { return processFinishEvents; }
-//
-//    public void addProcessFinishEvent(ProcessFinishEvent processFinishEvent) {
-//        for (ProcessFinishEvent p: processFinishEvents) {
-//            if (p.getProcess().getOperationOption().getOperation().getId() ==
-//                    processFinishEvent.getProcess().getOperationOption().getOperation().getId()) {
-//                System.out.println("Shouldn't happen");
-//            }
-//        }
-//        processFinishEvents.add(processFinishEvent);
-//    }
+    public List<ProcessFinishEvent> getProcessFinishEvents() { return processFinishEvents; }
+
+    public void addProcessFinishEvent(ProcessFinishEvent processFinishEvent) {
+        for (ProcessFinishEvent p: processFinishEvents) {
+            if (p.getProcess().getOperationOption().getOperation().getId() ==
+                    processFinishEvent.getProcess().getOperationOption().getOperation().getId()) {
+                System.out.println("Shouldn't happen");
+            }
+        }
+        processFinishEvents.add(processFinishEvent);
+    }
 
     public Operation getOperation(int idx) {
         return operations.get(idx);
@@ -143,29 +144,47 @@ public class Job implements Comparable<Job> {
 //            fdd += operation.getOperationOption().getProcTime();
 //        }
 
+        //play with this - just use average values?
+        //or average among the options?
 
         //TODO: Ask Yi and Meng
         double workRemaining = 0.0;
         int numOpsRemaining = 0;
         for (int i = operations.size()-1; i > -1; i--) {
             Operation operation = operations.get(i);
+
+            //difficult to know what to do here, as we do not at this point
+            //know which OperationOption we will use - using median value seems fair
+            double medianProcTime;
+            double[] procTimes = new double[operation.getOperationOptions().size()];
+            for (int j = 0; j < operation.getOperationOptions().size(); ++j) {
+                procTimes[j] = operation.getOperationOptions().get(j).getProcTime();
+            }
+            Arrays.sort(procTimes);
+            if (procTimes.length % 2 == 0){
+                //halfway between two points, as even number of elements
+                medianProcTime = ((double) procTimes[procTimes.length/2] + (double)procTimes[procTimes.length/2 - 1])/2;
+            }
+            else {
+                medianProcTime = (double) procTimes[procTimes.length / 2];
+            }
+
             for (OperationOption option: operation.getOperationOptions()) {
 
-                option.setWorkRemaining(workRemaining + option.getProcTime());
+                option.setWorkRemaining(workRemaining + medianProcTime);
 
                 option.setNumOpsRemaining(numOpsRemaining);
 
                 option.setNextProcTime(nextProcTime);
             }
 
-            numOpsRemaining ++;
-            OperationOption worstOption = operation.getOperationOption();
-            workRemaining += worstOption.getProcTime(); //worst case scenario
+            numOpsRemaining++;
+            workRemaining += medianProcTime;
 
             operation.setNext(next);
 
             next = operation;
-            nextProcTime = worstOption.getProcTime(); //pessimistic guess
+            nextProcTime = medianProcTime; //average guess
         }
         totalProcTime = workRemaining;
         avgProcTime = totalProcTime / operations.size();

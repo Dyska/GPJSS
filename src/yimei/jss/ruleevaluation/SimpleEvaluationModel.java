@@ -30,7 +30,6 @@ public class SimpleEvaluationModel extends AbstractEvaluationModel {
      * Whether to rotate the simulation seed or not.
      */
     public final static String P_ROTATE_SIM_SEED = "rotate-sim-seed";
-
     public final static String P_SIM_MODELS = "sim-models";
     public final static String P_SIM_NUM_MACHINES = "num-machines";
     public final static String P_SIM_NUM_JOBS = "num-jobs";
@@ -119,7 +118,7 @@ public class SimpleEvaluationModel extends AbstractEvaluationModel {
                 //Dynamic Simulation
                 simulation = new DynamicSimulation(simSeed,
                         null, null, numMachines, numJobs, warmupJobs,
-                        minNumOperations, maxNumOperations, minNumOptions, maxNumOptions,
+                        minNumOperations, maxNumOperations,
                         utilLevel, dueDateFactor, false);
             } else {
                 FlexibleStaticInstance instance = FlexibleStaticInstance.readFromAbsPath(filePath);

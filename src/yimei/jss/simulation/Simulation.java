@@ -169,7 +169,6 @@ public abstract class Simulation {
         if (numJobsArrived > warmupJobs && job.getId() >= 0
                 && job.getId() < numJobsRecorded + warmupJobs) {
             throughput++;
-
             systemState.addCompletedJob(job);
         }
         systemState.removeJobFromSystem(job);
