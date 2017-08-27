@@ -43,19 +43,25 @@ import java.util.List;
  */
 public class GridResultCleaner {
     private static final char DEFAULT_SEPARATOR = ',';
-    private static final String GRID_PATH = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/grid_results";
+    private static final String GRID_PATH = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/grid_results/";
     private String dataPath;
     private String outPath;
     private HashMap<String, Integer> benchmarkMakespans;
     private boolean doIncludeGenerations;
     private int numPops;
+    private boolean isStatic;
 
-    public GridResultCleaner(String dirName, int numPops, boolean doIncludeGenerations) {
-        this.dataPath = GRID_PATH + "/raw/" + dirName;
+    public GridResultCleaner(String simulationType, String dirName, int numPops, boolean doIncludeGenerations) {
+        this.dataPath =  GRID_PATH + simulationType + "/raw/" + dirName;
+        this.outPath =  GRID_PATH + simulationType+ "/cleaned/" + dirName;
         this.numPops = numPops;
-        this.outPath = GRID_PATH + "/cleaned/" + dirName;
         this.doIncludeGenerations = doIncludeGenerations;
-        benchmarkMakespans = InitBenchmarkMakespans();
+        if (simulationType == "Static") {
+            isStatic = true;
+            benchmarkMakespans = InitBenchmarkMakespans();
+        } else {
+            isStatic = false;
+        }
     }
 
     private HashMap<String, Integer> InitBenchmarkMakespans() {
@@ -87,8 +93,9 @@ public class GridResultCleaner {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(dataPath))) {
             for (Path path: stream) {
                 if (path.toFile().isDirectory()) {
-                    if (path.toString().startsWith(dataPath+"/data-")) {
-                        HashMap<Integer, Integer[]> makespans = parseMakespans(path.toString());
+                    //don't want .DS_Store files...
+                    if (!path.toString().startsWith(dataPath+"/.")) {
+                        HashMap<Integer, Double[]> makespans = parseMakespans(path.toString());
                         if (makespans != null) {
                             System.out.println("Creating results file for: "+
                                     path.toString().substring(dataPath.length()+1));
@@ -102,16 +109,19 @@ public class GridResultCleaner {
         }
     }
 
-    public HashMap<Integer, Integer[]> parseMakespans(String directoryPath) {
+    public HashMap<Integer, Double[]> parseMakespans(String directoryPath) {
         List<String> fileNames = FJSSMain.getFileNames(new ArrayList(), Paths.get(directoryPath), ".stat");
         if (fileNames.isEmpty()) {
-            //must not be a diretory for this file
+            //must not be a directory for this file
             return null;
         }
-        HashMap<Integer, Integer[]> makespans = new HashMap<Integer, Integer[]>();
+        HashMap<Integer, Double[]> makespans = new HashMap<Integer, Double[]>();
         //we have a file, and the fitness of all rules evolved from this file is the makespan of that
         //rule divided by the benchmark makespan (which is constant)
-        int benchmarkMakespan = roundMakespan(getBenchmarkMakeSpan(directoryPath));
+        int benchmarkMakespan = 0;
+        if (isStatic) {
+            benchmarkMakespan = roundMakespan(getBenchmarkMakeSpan(directoryPath));
+        }
 
         //iterating through the output from each different seed value
         for (String fileName: fileNames) {
@@ -120,11 +130,17 @@ public class GridResultCleaner {
             String fileNumber = fileName.substring(fileName.indexOf("job")+"job.".length());
             int fileNum = Integer.parseInt(fileNumber.substring(0,fileNumber.indexOf(".out.stat")));
 
-            Integer[] fileMakespans = new Integer[fitnesses.length];
-            for (int i = 0; i < fitnesses.length; ++i) {
-                fileMakespans[i] = roundMakespan(benchmarkMakespan * fitnesses[i]);
+            if (isStatic) {
+                Double[] fileMakespans = new Double[fitnesses.length];
+                for (int i = 0; i < fitnesses.length; ++i) {
+                    fileMakespans[i] = (double) roundMakespan(benchmarkMakespan * fitnesses[i]);
+                }
+                makespans.put(fileNum, fileMakespans);
+            } else {
+                //just going to record fitnesses
+                makespans.put(fileNum, fitnesses);
             }
-            makespans.put(fileNum, fileMakespans);
+
         }
         return makespans;
     }
@@ -192,15 +208,20 @@ public class GridResultCleaner {
         return bestFitnesses.toArray(new Double[0]);
     }
 
-    public void createResultFile(String directoryPath, HashMap<Integer, Integer[]> makespanMap) {
-        String outputFileName = directoryPath.substring(dataPath.length()+1+"data-".length())+".csv";
-        String csvFile = outPath + "/"+ outputFileName;
+    public void createResultFile(String directoryPath, HashMap<Integer, Double[]> makespanMap) {
+        String outputFileName;
+        if (isStatic) {
+            outputFileName = directoryPath.substring(dataPath.length()+1+"data-".length())+".csv";
+        } else {
+            outputFileName = directoryPath.substring(directoryPath.lastIndexOf("/")+1)+".csv";
+        }
+        String CSVFile = outPath + "/"+ outputFileName;
 
-        try (FileWriter writer = new FileWriter(csvFile)) {
+        try (FileWriter writer = new FileWriter(CSVFile)) {
             //add header first
             List<String> headers = new ArrayList<String>();
             //expecting the same number of generations for all seeds, so just get any value
-            Integer[] entry = makespanMap.get(makespanMap.keySet().iterator().next());
+            Double[] entry = makespanMap.get(makespanMap.keySet().iterator().next());
             for (int i = 0; i < entry.length-1; ++i) {
                 headers.add("Gen"+i);
             }
@@ -210,9 +231,12 @@ public class GridResultCleaner {
             for (Integer i: makespanMap.keySet()) {
                 List<String> makespanCSV = new ArrayList<String>();
                 String makeSpansString = "";
-                Integer[] makespans = makespanMap.get(i);
-                for (Integer makespan: makespans) {
+                Double[] makespans = makespanMap.get(i);
+                for (Double makespan: makespans) {
                     makeSpansString += makespan.toString() +",";
+                }
+                if (makeSpansString.length() == 0) {
+                    int a =1;
                 }
                 makespanCSV.add(makeSpansString.substring(0, makeSpansString.length()-1));
                 writeLine(writer, makespanCSV);
@@ -271,7 +295,7 @@ public class GridResultCleaner {
     }
 
     public static void main(String args[]) {
-        GridResultCleaner grc = new GridResultCleaner("fjss_simple_fixed", 1, true );
+        GridResultCleaner grc = new GridResultCleaner("static","fjss_coevolve_fixed", 2, true );
         grc.cleanResults();
     }
 }
