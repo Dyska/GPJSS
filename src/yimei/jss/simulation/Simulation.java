@@ -1,8 +1,6 @@
 package yimei.jss.simulation;
 
-import yimei.jss.jobshop.Job;
-import yimei.jss.jobshop.Objective;
-import yimei.jss.jobshop.OperationOption;
+import yimei.jss.jobshop.*;
 import yimei.jss.jobshop.Process;
 import yimei.jss.rule.AbstractRule;
 import yimei.jss.simulation.event.*;
@@ -120,18 +118,16 @@ public abstract class Simulation {
     public void run() {
         while (!eventQueue.isEmpty() && throughput < numJobsRecorded) {
             AbstractEvent nextEvent = eventQueue.poll();
-//            OperationOption o = null;
-//            if (nextEvent instanceof ProcessFinishEvent) {
-//                o = ((ProcessFinishEvent) nextEvent).getProcess().getOperationOption();
-//            } else if (nextEvent instanceof  OperationVisitEvent) {
-//                o = ((OperationVisitEvent) nextEvent).getOperationOption();
-//            } else if (nextEvent instanceof ProcessStartEvent) {
-//                o = ((ProcessStartEvent) nextEvent).getProcess().getOperationOption();
-//            }
-            //if (!eventIsDuplicate(nextEvent)) {
+
             systemState.setClockTime(nextEvent.getTime());
             nextEvent.trigger(this);
-            //}
+
+            for (WorkCenter w: systemState.getWorkCenters()) {
+                if (w.numOpsInQueue() > 500) {
+                    systemState.setClockTime(Double.MAX_VALUE);
+                    eventQueue.clear();
+                }
+            }
         }
         if (!systemState.getJobsInSystem().isEmpty() && !(this instanceof DynamicSimulation)) {
             //TODO: Check whether this is a problem with DynamicSimulation

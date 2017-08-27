@@ -57,7 +57,8 @@ public class ProcessFinishEvent extends AbstractEvent {
             simulation.addEvent(new ProcessStartEvent(nextP));
         }
 
-        OperationOption nextOp = process.getOperationOption().getNext(simulation.getSystemState(),simulation.getRoutingRule());
+        OperationOption nextOp = process.getOperationOption().getNext(simulation.getSystemState(),
+                simulation.getRoutingRule());
 
         if (nextOp == null) {
             Job job = process.getOperationOption().getJob();

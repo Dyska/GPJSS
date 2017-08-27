@@ -9,6 +9,7 @@ import org.apache.commons.math3.analysis.function.Abs;
 import yimei.jss.jobshop.FlexibleStaticInstance;
 import yimei.jss.jobshop.Objective;
 import yimei.jss.jobshop.SchedulingSet;
+import yimei.jss.jobshop.WorkCenter;
 import yimei.jss.rule.AbstractRule;
 import yimei.jss.simulation.DynamicSimulation;
 import yimei.jss.simulation.Simulation;
@@ -158,6 +159,12 @@ public class MultipleRuleEvaluationModel extends AbstractEvaluationModel{
             for (int i = 0; i < objectives.size(); i++) {
                 double normObjValue = simulation.objectiveValue(objectives.get(i))
                         / schedulingSet.getObjectiveLowerBound(i, col);
+                for (WorkCenter w: simulation.getSystemState().getWorkCenters()) {
+                    if (w.numOpsInQueue() > 500) {
+                        //this was a bad run
+                        normObjValue = Double.MAX_VALUE;
+                    }
+                }
                 fitnesses[i] += normObjValue;
             }
 

@@ -221,7 +221,7 @@ eval.problem.eval-model.objectives.0 = mean-flowtime
 eval.problem.eval-model.sim-models = 1
 eval.problem.eval-model.sim-models.0.util-level = 0.85
 eval.problem.eval-model.rotate-sim-seed = true
-eval.problem.eval-model.sim-models.0.num-jobs = 2500
-eval.problem.eval-model.sim-models.0.warmup-jobs = 500
+eval.problem.eval-model.sim-models.0.num-jobs = 5000
+eval.problem.eval-model.sim-models.0.warmup-jobs = 1000
 
 terminals-from = relative

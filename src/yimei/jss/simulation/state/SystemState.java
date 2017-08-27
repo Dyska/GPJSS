@@ -5,9 +5,7 @@ import yimei.jss.jobshop.Process;
 import yimei.jss.rule.AbstractRule;
 import yimei.jss.simulation.event.ProcessFinishEvent;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * The state of the discrete event simulation system.
@@ -92,43 +90,233 @@ public class SystemState {
 
     public void addCompletedJob(Job job) {
         jobsCompleted.add(job);
+//        if (jobsCompleted.size() == 5000) {
+//            checkDuplicates();
+//            calcUtilLevel();
+//            System.out.println("Successful");
+//        }
     }
 
-//    private boolean verifyRestrictionsMet(List<Job> jobsCompleted) {
-//        //as a basic start, let's go through the work centers and create an array with clocktime empty slots for each
-//        //then we can fill in each array with the operation that was being worked on, and check none used the
-//        //same work center at the same time
-//        int numWorkCenters = workCenters.size();
-//        int clockTime = (int) getClockTime();
+    private boolean verifyRestrictionsMet(List<Job> jobsCompleted) {
+        //as a basic start, let's go through the work centers and create an array with clocktime empty slots for each
+        //then we can fill in each array with the operation that was being worked on, and check none used the
+        //same work center at the same time
+        int numWorkCenters = workCenters.size();
+        int clockTime = (int) getClockTime();
+        //System.out.println("Clock time: "+clockTime);
+
+        //By looking at all operation values, lets check workDone makes sense
+        //It's the average proc time per operation we're sceptical of
+
+
+
+        //So with traditional JSS, say we have a job with 10 operations
+        //then the average procedure time will be the sampler's average
+        //but in FJSS, a job with 10 operations and 5 options per operation
+        //if it chooses the lowest procedure time for each option, then the util
+        //level will be very low comparatively
+
 //
-//        int[][] workCenterAllocations = new int[numWorkCenters][clockTime];
-//        for (int i = 0; i < numWorkCenters; ++i) {
-//            for (int j = 0; j < clockTime; ++j) {
-//                //ensure all have the same default value
-//                workCenterAllocations[i][j] = -1;
+//        double medianWork = 0.0;
+//        double minWork = 0.0;
+//        double maxWork = 0.0;
+//        int numOperationsAgain = 0;
+//        for (Job job: jobsCompleted) {
+//            for (Operation operation: job.getOperations()) {
+//                double medianProcTime;
+//                double[] procTimes = new double[operation.getOperationOptions().size()];
+//                for (int j = 0; j < operation.getOperationOptions().size(); ++j) {
+//                    procTimes[j] = operation.getOperationOptions().get(j).getProcTime();
+//                }
+//                Arrays.sort(procTimes);
+//                minWork += procTimes[0]; //minimum proc time
+//                maxWork += procTimes[operation.getOperationOptions().size()-1]; //maximum proc time
+//
+//                if (procTimes.length % 2 == 0){
+//                    //halfway between two points, as even number of elements
+//                    medianProcTime = ((double) procTimes[procTimes.length/2] + (double)procTimes[procTimes.length/2 - 1])/2;
+//                }
+//                else {
+//                    medianProcTime = (double) procTimes[procTimes.length / 2];
+//                }
+//                medianWork += medianProcTime;
+//                numOperationsAgain++;
 //            }
 //        }
 //
-//        int numJobs = 0;
-//        int numProcess = 0;
-//        for (Job job: jobsCompleted) {
-//            for (ProcessFinishEvent processFinishEvent: job.getProcessFinishEvents()) {
-//                Process p = processFinishEvent.getProcess();
-//                int[] workCenterSchedule = workCenterAllocations[p.getWorkCenter().getId()];
+//        System.out.println("Minimum average time per operation: "+minWork/numOperationsAgain);
+//        System.out.println("Median time per operation: "+medianWork/numOperationsAgain);
+//        System.out.println("Maximum time per operation: "+maxWork/numOperationsAgain);
+
+
+        double[] jobArrivalTimes = new double[jobsCompleted.size()];
+        for (int i = 0; i < jobsCompleted.size(); ++i) {
+            jobArrivalTimes[i] = jobsCompleted.get(i).getArrivalTime();
+        }
+        //Arrays.sort(jobArrivalTimes);
+        //double[] interArrivalTimes = new double[jobsCompleted.size()-1];
+        double interArrivalTimesSum = 0.0;
+        for (int i = 0; i < jobsCompleted.size()-1; ++i) {
+            interArrivalTimesSum += (jobArrivalTimes[i+1] - jobArrivalTimes[i]);
+        }
+//        Arrays.sort(interArrivalTimes);
+//        double medianInterArrivalTime;
+//        if (interArrivalTimes.length % 2 == 0){
+//            //halfway between two points, as even number of elements
+//            medianInterArrivalTime = ((double) interArrivalTimes[interArrivalTimes.length/2] + (double)interArrivalTimes[interArrivalTimes.length/2 - 1])/2;
+//        }
+//        else {
+//            medianInterArrivalTime = (double) interArrivalTimes[interArrivalTimes.length / 2];
+//        }
+//
+//        System.out.println("Median inter-arrival time for this simulation: "+medianInterArrivalTime);
+        System.out.println("Mean inter-arrival time for this simulation: "+(interArrivalTimesSum/
+                jobsCompleted.size()-1));
+        return true;
+    }
+
+    private void calcUtilLevel() {
+        int numWorkCenters = workCenters.size();
+        double[] maxTimesEarliest = new double[numWorkCenters];
+        for (int i = 0; i < numWorkCenters; ++i) {
+            maxTimesEarliest[i] = Double.MAX_VALUE; //so we know default
+        }
+        double[] maxTimesLatest = new double[numWorkCenters];
+
+        //for max times we just need to know the earliest and latest operationOption to be performed
+        //on a given workcenter right?
+        double[] busyTimes = new double[numWorkCenters];
+        for (Job j: jobsCompleted) {
+            if (j.getOperations().size() != j.getProcessFinishEvents().size()) {
+                System.out.println("Job isn't finished...");
+            }
+            for (ProcessFinishEvent processFinishEvent: j.getProcessFinishEvents()) {
+                Process p = processFinishEvent.getProcess();
+                int workCenterId = p.getWorkCenter().getId();
+                if (maxTimesEarliest[workCenterId] > p.getStartTime()) {
+                    maxTimesEarliest[workCenterId] = p.getStartTime();
+                }
+                if (maxTimesLatest[workCenterId] < p.getFinishTime()) {
+                    maxTimesLatest[workCenterId] = p.getFinishTime();
+                }
+                double operationDuration = p.getFinishTime() - p.getStartTime();
+                busyTimes[workCenterId] += operationDuration;
+            }
+        }
+
+        double sumMaxTime = 0;
+        double sumBusyTime = 0;
+        for (int i = 0; i < numWorkCenters; ++i) {
+            sumMaxTime += (maxTimesLatest[i] - maxTimesEarliest[i]);
+            sumBusyTime += busyTimes[i];
+        }
+
+        String print = " "+(sumBusyTime*100)/sumMaxTime;
+
+//        //This method should calculate the proportion of the time that the workCenters
+//        //are busy
+//        //If util level = 100% then -> numWorkCenters * timeTaken = amount of work done
+//        double maxBusyTime = 0;
+//        int totalBusyTime = 0;
+//        for (int i = 0; i < numWorkCenters; ++i) {
+//            int workCenterBusyTime = 0;
+//            int workCenterMaxBusyTime = 0;
+//            boolean warmupComplete = false;
+//            boolean finished = false;
+//            int warmupStartedAt = 0;
+//            int finishedAt = 0;
+//            int finishedCount = 0; //maintain this count in case we are not finished
+//
+//            for (int j = 0; j < workCenterAllocations[i].length; ++j) {
+//                if (workCenterAllocations[i][j] != -1) {
+//                    workCenterBusyTime++;
+//                    if (finished) {
+//                        if (warmupComplete) {
+//                            workCenterMaxBusyTime += finishedCount; //we were wrong
+//                        }
+//                        finished = false;
+//                        finishedCount = 0;
+//                    }
+//                    if (!warmupComplete) {
+//                        warmupComplete = true;
+//                        warmupStartedAt = j;
+//                    }
+//                }
+//                if (warmupComplete) {
+//                    if (workCenterAllocations[i][j] == -1) {
+//                        if (!finished) {
+//                            finishedAt = j;
+//                            finished = true;
+//                        }
+//                        finishedCount++;
+//                    } else {
+//                        workCenterMaxBusyTime++;
+//                    }
+//                }
+//            }
+//            if (workCenterAllocations[i][workCenterAllocations[i].length-1] != -1) {
+//                finishedAt = workCenterAllocations[i].length-1;
+//            }
+//            //System.out.println("Work center "+i+" was busy "+workCenterBusyTime +" out of "+workCenterMaxBusyTime);
+//            totalBusyTime += workCenterBusyTime;
+//            maxBusyTime += workCenterMaxBusyTime;
+//            int workCenterBusy = finishedAt - warmupStartedAt;
+//            //System.out.println("Max busy time: "+workCenterMaxBusyTime+" vs "+workCenterBusy);
+//        }
+
+        //double utilLevel = (totalBusyTime*100)/maxBusyTime;
+        //System.out.println("Util level: "+print);
+        //System.out.println();
+    }
+
+    private void checkDuplicates() {
+
+        double numJobs = 0;
+        double numOperations = 0;
+        double workDone = 0;
+
+        //Process[][] processes = new Process[workCenters.size()][jobsCompleted.size()];
+        List<List> processes = new ArrayList<>();
+        for (int i = 0; i < workCenters.size(); ++i) {
+            processes.add(new ArrayList<Process>());
+        }
+
+        for (Job job: jobsCompleted) {
+            for (ProcessFinishEvent processFinishEvent: job.getProcessFinishEvents()) {
+                Process p = processFinishEvent.getProcess();
+                processes.get(p.getWorkCenter().getId()).add(p);
+                //List<Process> workCenterSchedule = workCenterAllocations[p.getWorkCenter().getId()];
 //                for (int i = (int) p.getStartTime(); i < (int) p.getFinishTime(); ++i) {
 //                    if (workCenterSchedule[i] == -1) {
 //                        workCenterSchedule[i] = job.getId();
 //                    } else {
 //                        System.out.println("Doubled up on the schedule");
-//                        return false;
+//                        //return false;
 //                    }
 //                }
-//                numProcess++;
-//            }
-//            numJobs++;
-//        }
-//        return true;
-//    }
+                //numOperations++;
+                //workDone += p.getOperationOption().getProcTime();
+            }
+        }
+
+        for (int i = 0; i < workCenters.size(); ++i) {
+            List<Process> workCenterProcesses = processes.get(i);
+            Collections.sort(workCenterProcesses);
+            for (int j = 0; j < workCenterProcesses.size()-1; ++j) {
+                //want to check that this process starts after the one in front of it
+                //and finishes before the one after it
+                Process p1 = workCenterProcesses.get(j);
+                Process p2 = workCenterProcesses.get(j+1);
+                if (p1.getFinishTime() > p2.getStartTime()) {
+                    System.out.println("Double up of schedule");
+                }
+            }
+        }
+
+//        System.out.println("Num jobs: "+numJobs);
+//        System.out.println("Num operations: "+numOperations+", Average Number per Job: "+numOperations/numJobs);
+//        System.out.println("Work done: "+workDone+", Average Proc Time per Operation: "+workDone/numOperations);
+    }
 
     public void reset() {
         clockTime = 0.0;
