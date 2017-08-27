@@ -1,5 +1,5 @@
 #Run from command line with: "Rscript process_cleaned_results.R folder_name
-#eg: Rscript process_cleaned_results.R fixed_makespans_single
+#eg: Rscript process_cleaned_results_static.R fjss_coevolve_fixed
 
 args = commandArgs(trailingOnly=TRUE)
 if (length(args) == 0) {
@@ -7,7 +7,7 @@ if (length(args) == 0) {
 }
 
 base_directory = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/"
-grid_directory = paste(base_directory, "grid_results/",sep="")
+grid_directory = paste(base_directory, "grid_results/static/",sep="")
 input_dir = paste(grid_directory,"cleaned/",sep="")
 output_dir = paste(grid_directory,"processed/",sep="")
 bounds_dir = paste(base_directory,"fjss_bounds/",sep="")
