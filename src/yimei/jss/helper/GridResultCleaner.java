@@ -140,7 +140,6 @@ public class GridResultCleaner {
                 //just going to record fitnesses
                 makespans.put(fileNum, fitnesses);
             }
-
         }
         return makespans;
     }
@@ -175,9 +174,13 @@ public class GridResultCleaner {
             Double[] fitnesses = new Double[numPops]; //should be reset every generation
             int numFound = 0;
             while ((sCurrentLine = br.readLine()) != null) {
-                if ((sCurrentLine.startsWith("Generation") ||
-                        sCurrentLine.startsWith("Best Individual "))
-                        && numFound > 0) { //check numFound so won't enter after init
+                if (sCurrentLine.startsWith("Fitness")) {
+                    //line should be in format "Fitness: [0.8386540120793787]"
+                    sCurrentLine = sCurrentLine.substring(sCurrentLine.indexOf("[")+1, sCurrentLine.length()-1);
+                    fitnesses[numFound] = Double.parseDouble(sCurrentLine);
+                    numFound++;
+                }
+                if (numFound == numPops) {
                     //quickly sort the fitnesses - only want lower one (best)
                     Double best = fitnesses[0];
                     if (fitnesses.length == 2) {
@@ -189,15 +192,6 @@ public class GridResultCleaner {
                     //reset
                     fitnesses = new Double[numPops];
                     numFound = 0;
-                }
-                else if (sCurrentLine.startsWith("Fitness")) {
-                    //line should be in format "Fitness: [0.8386540120793787]"
-                    sCurrentLine = sCurrentLine.substring(sCurrentLine.indexOf("[")+1, sCurrentLine.length()-1);
-                    if (numFound > 1) {
-                        System.out.println("");
-                    }
-                    fitnesses[numFound] = Double.parseDouble(sCurrentLine);
-                    numFound++;
                 }
             }
         } catch (FileNotFoundException e) {
@@ -270,9 +264,9 @@ public class GridResultCleaner {
                 sb.append(separators);
             }
             if (customQuote == ' ') {
-                sb.append(followCVSformat(value));
+                sb.append(followCSVformat(value));
             } else {
-                sb.append(customQuote).append(followCVSformat(value)).append(customQuote);
+                sb.append(customQuote).append(followCSVformat(value)).append(customQuote);
             }
 
             first = false;
@@ -281,7 +275,7 @@ public class GridResultCleaner {
         w.append(sb.toString());
     }
 
-    private static String followCVSformat(String value) {
+    private static String followCSVformat(String value) {
 
         String result = value;
         if (result.contains("\"")) {
@@ -295,7 +289,7 @@ public class GridResultCleaner {
     }
 
     public static void main(String args[]) {
-        GridResultCleaner grc = new GridResultCleaner("static","fjss_coevolve_fixed", 2, true );
+        GridResultCleaner grc = new GridResultCleaner("dynamic","simple", 1, true );
         grc.cleanResults();
     }
 }
