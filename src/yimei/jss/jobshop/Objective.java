@@ -4,10 +4,13 @@ import yimei.jss.rule.AbstractRule;
 import yimei.jss.rule.RuleType;
 import yimei.jss.rule.operation.basic.EDD;
 import yimei.jss.rule.operation.basic.FCFS;
+import yimei.jss.rule.operation.basic.SPT;
 import yimei.jss.rule.operation.composite.ATC;
 //import yimei.jss.rule.operation.composite.TwoPTplusWINQplusNPT;
 import yimei.jss.rule.operation.weighted.WATC;
+import yimei.jss.rule.operation.weighted.WSPT;
 import yimei.jss.rule.workcenter.basic.SBT;
+import yimei.jss.rule.workcenter.basic.WIQ;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -60,11 +63,11 @@ public enum Objective {
             case MAKESPAN:
                 return new FCFS(RuleType.SEQUENCING);
             case MEAN_FLOWTIME:
-                return new FCFS(RuleType.SEQUENCING);
+                return new SPT(RuleType.SEQUENCING);
             case MAX_FLOWTIME:
-                return new FCFS(RuleType.SEQUENCING);
+                return new SPT(RuleType.SEQUENCING);
             case MEAN_WEIGHTED_FLOWTIME:
-                return new FCFS(RuleType.SEQUENCING);
+                return new WSPT(RuleType.SEQUENCING);
 //                return new TwoPTplusWINQplusNPT(RuleType.SEQUENCING);
             case MEAN_TARDINESS:
                 return new ATC(RuleType.SEQUENCING);
@@ -78,6 +81,6 @@ public enum Objective {
     }
 
     public AbstractRule benchmarkRoutingRule() {
-        return new SBT(RuleType.ROUTING);
+        return new WIQ(RuleType.ROUTING);
     }
 }

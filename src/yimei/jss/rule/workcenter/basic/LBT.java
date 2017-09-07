@@ -24,4 +24,6 @@ public class LBT extends AbstractRule {
     public double priority(OperationOption op, WorkCenter workCenter, SystemState systemState) {
         return -workCenter.getBusyTime();
     }
+
+
 }

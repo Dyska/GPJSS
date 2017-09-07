@@ -340,6 +340,7 @@ public class SystemState {
 //
 //        return nextOp.getWorkCenter().getWorkInQueue();
 //    }
+
 //
 //    public double numOpsInNextQueue(OperationOption operation) {
 //        OperationOption nextOp = operation.getNext(this);

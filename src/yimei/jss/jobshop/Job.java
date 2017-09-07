@@ -57,12 +57,12 @@ public class Job implements Comparable<Job> {
     public List<ProcessFinishEvent> getProcessFinishEvents() { return processFinishEvents; }
 
     public void addProcessFinishEvent(ProcessFinishEvent processFinishEvent) {
-        for (ProcessFinishEvent p: processFinishEvents) {
-            if (p.getProcess().getOperationOption().getOperation().getId() ==
-                    processFinishEvent.getProcess().getOperationOption().getOperation().getId()) {
-                System.out.println("Shouldn't happen");
-            }
-        }
+//        for (ProcessFinishEvent p: processFinishEvents) {
+//            if (p.getProcess().getOperationOption().getOperation().getId() ==
+//                    processFinishEvent.getProcess().getOperationOption().getOperation().getId()) {
+//                System.out.println("Shouldn't happen");
+//            }
+//        }
         processFinishEvents.add(processFinishEvent);
     }
 

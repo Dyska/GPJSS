@@ -199,8 +199,6 @@ gp.fs.0.func.5 = yimei.jss.gp.function.Max
 gp.fs.0.func.5.nc = nc2
 gp.fs.0.func.6 = yimei.jss.gp.function.Min
 gp.fs.0.func.6.nc = nc2
-#gp.fs.0.func.7 = yimei.jss.gp.function.If
-#gp.fs.0.func.7.nc = nc3
 
 # ==============================
 # The output format

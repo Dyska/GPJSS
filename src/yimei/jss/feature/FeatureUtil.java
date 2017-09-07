@@ -43,7 +43,7 @@ public class FeatureUtil {
                                                         int n) {
         Arrays.sort(archive);
 
-        ClearingEvaluator clearingEvaluator = (ClearingEvaluator)state.evaluator;
+        ClearingEvaluator clearingEvaluator = (ClearingEvaluator) state.evaluator;
         PhenoCharacterisation pc = clearingEvaluator.getPhenoCharacterisation();
         pc.setReferenceRule(new GPRule(RuleType.SEQUENCING,((GPIndividual)archive[0]).trees[0]));
 

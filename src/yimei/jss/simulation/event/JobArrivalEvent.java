@@ -1,7 +1,12 @@
 package yimei.jss.simulation.event;
 
 import yimei.jss.jobshop.Job;
-import yimei.jss.simulation.DecisionSituation;
+import yimei.jss.jobshop.Operation;
+import yimei.jss.jobshop.OperationOption;
+import yimei.jss.rule.RuleType;
+import yimei.jss.rule.workcenter.basic.WIQ;
+import yimei.jss.simulation.RoutingDecisionSituation;
+import yimei.jss.simulation.SequencingDecisionSituation;
 import yimei.jss.simulation.DynamicSimulation;
 import yimei.jss.simulation.Simulation;
 
@@ -25,20 +30,21 @@ public class JobArrivalEvent extends AbstractEvent {
 
     @Override
     public void trigger(Simulation simulation) {
-        job.getOperation(0).getOperationOption(simulation.getSystemState(),
-                simulation.getRoutingRule()).setReadyTime(job.getReleaseTime());
+        //Job has just arrived, get first operation out
+        Operation operation = job.getOperation(0);
+        RoutingDecisionSituation decisionSituation = new RoutingDecisionSituation(
+                operation.getOperationOptions(), simulation.getSystemState());
+        OperationOption operationOption =
+                simulation.getRoutingRule().nextOperationOption(decisionSituation);
+        operationOption.setReadyTime(job.getReleaseTime());
 
-        simulation.addEvent(
-                new OperationVisitEvent(job.getReleaseTime(), job.getOperation(0).getOperationOption(
-                        simulation.getSystemState(),simulation.getRoutingRule()))
-        );
-
+        simulation.addEvent(new OperationVisitEvent(job.getReleaseTime(), operationOption));
         simulation.generateJob();
     }
 
     @Override
     public void addDecisionSituation(DynamicSimulation simulation,
-                                     List<DecisionSituation> situations,
+                                     List<SequencingDecisionSituation> situations,
                                      int minQueueLength) {
         trigger(simulation);
     }

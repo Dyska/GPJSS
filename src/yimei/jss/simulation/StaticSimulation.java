@@ -54,7 +54,7 @@ public class StaticSimulation extends Simulation {
             systemState.addJobToSystem(job);
 
             //this first operation option will always be the same
-            OperationOption firstOption = job.getOperation(0).getOperationOption(systemState, routingRule);
+            OperationOption firstOption = job.getOperation(0).chooseOperationOption(systemState, routingRule);
 
             //this is a static simulation, no jobs are arriving after t = 0
             firstOption.getWorkCenter().addToQueue(firstOption);
@@ -117,7 +117,7 @@ public class StaticSimulation extends Simulation {
     public Process createDummyProcess(WorkCenter workCenter, double readyTime) {
         Job job = new Job(-1-workCenter.getId(), new ArrayList<>());
         Operation op = new Operation(job, 0, readyTime, workCenter);
-        Process process = new Process(workCenter, 0, op.getOperationOption(systemState,routingRule), 0);
+        Process process = new Process(workCenter, 0, op.chooseOperationOption(systemState,routingRule), 0);
 
         return process;
     }

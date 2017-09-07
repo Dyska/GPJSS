@@ -9,21 +9,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A decision situation.
- *
- * Created by YiMei on 3/10/16.
+ * Created by dyska on 7/09/17.
  */
-public class DecisionSituation {
+public class RoutingDecisionSituation {
 
     private List<OperationOption> queue;
-    private WorkCenter workCenter;
     private SystemState systemState;
 
-    public DecisionSituation(List<OperationOption> queue,
-                             WorkCenter workCenter,
-                             SystemState systemState) {
-        this.queue = queue;
-        this.workCenter = workCenter;
+    public RoutingDecisionSituation(List<OperationOption> operationOptions, SystemState systemState) {
+        this.queue = operationOptions;
         this.systemState = systemState;
     }
 
@@ -31,19 +25,15 @@ public class DecisionSituation {
         return queue;
     }
 
-    public WorkCenter getWorkCenter() {
-        return workCenter;
-    }
 
     public SystemState getSystemState() {
         return systemState;
     }
 
-    public DecisionSituation clone() {
+    public RoutingDecisionSituation clone() {
         List<OperationOption> clonedQ = new ArrayList<>(queue);
-        WorkCenter clonedWC = workCenter.clone();
         SystemState clonedState = systemState.clone();
 
-        return new DecisionSituation(clonedQ, clonedWC, clonedState);
+        return new RoutingDecisionSituation(clonedQ, clonedState);
     }
 }

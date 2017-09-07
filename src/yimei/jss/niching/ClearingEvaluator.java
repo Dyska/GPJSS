@@ -41,9 +41,16 @@ public class ClearingEvaluator extends SimpleEvaluator {
                 base.push(P_RADIUS), null, 0.0);
         capacity = state.parameters.getIntWithDefault(
                 base.push(P_CAPACITY), null, 1);
-
-        phenoCharacterisation =
-                PhenoCharacterisation.defaultPhenoCharacterisation();
+        String filePath = state.parameters.getString(new Parameter("filePath"), null);
+        if (filePath == null) {
+            //dynamic simulation
+            phenoCharacterisation =
+                    PhenoCharacterisation.defaultPhenoCharacterisation();
+        } else {
+            //static simulation
+            phenoCharacterisation =
+                    PhenoCharacterisation.defaultPhenoCharacterisation(filePath);
+        }
     }
 
     @Override

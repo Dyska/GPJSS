@@ -3,7 +3,7 @@ package yimei.jss.simulation.event;
 import yimei.jss.jobshop.*;
 import yimei.jss.jobshop.Process;
 import yimei.jss.simulation.DynamicSimulation;
-import yimei.jss.simulation.DecisionSituation;
+import yimei.jss.simulation.SequencingDecisionSituation;
 import yimei.jss.simulation.Simulation;
 
 import java.util.List;
@@ -27,7 +27,7 @@ public class ProcessFinishEvent extends AbstractEvent {
     @Override
     public void trigger(Simulation simulation) {
         WorkCenter workCenter = process.getWorkCenter();
-//        process.getOperationOption().getJob().addProcessFinishEvent(this);
+        process.getOperationOption().getJob().addProcessFinishEvent(this);
 //        if (process.getOperationOption().getJob().getId() >= 0) {
 //            int[] jobStates = simulation.getJobStates();
 //            int jobState = jobStates[process.getOperationOption().getJob().getId()];
@@ -40,12 +40,12 @@ public class ProcessFinishEvent extends AbstractEvent {
 //        }
 
         if (!workCenter.getQueue().isEmpty()) {
-            DecisionSituation decisionSituation =
-                    new DecisionSituation(workCenter.getQueue(), workCenter,
+            SequencingDecisionSituation sequencingDecisionSituation =
+                    new SequencingDecisionSituation(workCenter.getQueue(), workCenter,
                             simulation.getSystemState());
 
             OperationOption dispatchedOp =
-                    simulation.getSequencingRule().priorOperation(decisionSituation);
+                    simulation.getSequencingRule().priorOperation(sequencingDecisionSituation);
 
             workCenter.removeFromQueue(dispatchedOp);
 
@@ -72,21 +72,21 @@ public class ProcessFinishEvent extends AbstractEvent {
 
     @Override
     public void addDecisionSituation(DynamicSimulation simulation,
-                                     List<DecisionSituation> situations,
+                                     List<SequencingDecisionSituation> situations,
                                      int minQueueLength) {
         WorkCenter workCenter = process.getWorkCenter();
 
         if (!workCenter.getQueue().isEmpty()) {
-            DecisionSituation decisionSituation =
-                    new DecisionSituation(workCenter.getQueue(), workCenter,
+            SequencingDecisionSituation sequencingDecisionSituation =
+                    new SequencingDecisionSituation(workCenter.getQueue(), workCenter,
                             simulation.getSystemState());
 
             if (workCenter.getQueue().size() >= minQueueLength) {
-                situations.add(decisionSituation.clone());
+                situations.add(sequencingDecisionSituation.clone());
             }
 
             OperationOption dispatchedOp =
-                    simulation.getSequencingRule().priorOperation(decisionSituation);
+                    simulation.getSequencingRule().priorOperation(sequencingDecisionSituation);
 
             workCenter.removeFromQueue(dispatchedOp);
             Process nextP = new Process(workCenter, process.getMachineId(),

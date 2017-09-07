@@ -16,16 +16,17 @@ public class GPMain {
         List<String> gpRunArgs = new ArrayList<>();
         boolean isTest = true;
         int maxTests = 2;
-        boolean isDynamic = true;
+        boolean isDynamic = false;
 
         //include path to params file
         gpRunArgs.add("-file");
 
         if (isDynamic) {
-            double utilLevel = 0.85;
-            String objective = "mean-weighted-flowtime";
+            double utilLevel = 0.850;
+            String objective = "mean-flowtime";
 
-            gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/simplegp/simplegp-dynamic.params");
+            //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/simplegp/simplegp-dynamic.params");
+            gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp-dynamic.params");
             gpRunArgs.add("-p");
             gpRunArgs.add("eval.problem.eval-model.sim-models.0.util-level="+utilLevel);
             gpRunArgs.add("-p");
@@ -39,6 +40,7 @@ public class GPMain {
                 gpRunArgs.remove(gpRunArgs.size()-1);
             }
         } else {
+            //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/featureselection/fsgp-simplegp-static.params");
             gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/simplegp/simplegp.params");
             //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp.params");
             gpRunArgs.add("-p");

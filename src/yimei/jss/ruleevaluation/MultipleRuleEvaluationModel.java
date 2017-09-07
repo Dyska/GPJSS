@@ -170,17 +170,17 @@ public class MultipleRuleEvaluationModel extends AbstractEvaluationModel{
 
             col++;
 
-//            for (int k = 1; k < schedulingSet.getReplications().get(j); k++) {
-//                simulation.rerun();
-//
-//                for (int i = 0; i < objectives.size(); i++) {
-//                    double normObjValue = simulation.objectiveValue(objectives.get(i))
-//                            / schedulingSet.getObjectiveLowerBound(i, col);
-//                    fitnesses[i] += normObjValue;
-//                }
-//
-//                col++;
-//            }
+            for (int k = 1; k < schedulingSet.getReplications().get(j); k++) {
+                simulation.rerun();
+
+                for (int i = 0; i < objectives.size(); i++) {
+                    double normObjValue = simulation.objectiveValue(objectives.get(i))
+                            / schedulingSet.getObjectiveLowerBound(i, col);
+                    fitnesses[i] += normObjValue;
+                }
+
+                col++;
+            }
 
             simulation.reset();
         }

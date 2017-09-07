@@ -216,5 +216,7 @@ gp.fs.0.func.6.nc =                     nc2
 #pop.subpop.0.species.ind.tree.0.c-operators = false
 #gp.tree.print-style =                  dot
 
+terminals-from = relative
+
 
 

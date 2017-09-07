@@ -16,6 +16,7 @@ public class WCOVERT extends AbstractRule {
 
     public WCOVERT(RuleType type, double k, double b) {
         name = "WCOVERT";
+        this.type = type;
         setK(k);
         setB(b);
     }

@@ -23,8 +23,7 @@ public enum JobShopAttribute {
     // The machine-related attributes (independent of the jobs in the queue of the machine).
     NUM_OPS_IN_QUEUE("NIQ"), // the number of operations in the queue
     WORK_IN_QUEUE("WIQ"), // the work in the queue
-    MACHINE_READY_TIME("MRT"), // the ready time of the machine
-
+    MACHINE_READY_TIME("MRT"), // the ready time of the machi
     // The job/operation-related attributes (depend on the jobs in the queue).
     PROC_TIME("PT"), // the processing time of the operation
     NEXT_PROC_TIME("NPT"), // the processing time of the next operation

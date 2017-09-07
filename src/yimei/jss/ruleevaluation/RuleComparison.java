@@ -39,10 +39,25 @@ public class RuleComparison {
             }
         }
 
-        List<String> bestOverallRules = getBestRules(bestRulesTotal);
+        HashMap<String, Integer> rules = new HashMap();
+        for (String rule: bestRulesTotal) {
+            if (rules.containsKey(rule)) {
+                int count = rules.get(rule);
+                rules.put(rule, count+1);
+            } else {
+                //add it if not already there
+                rules.put(rule, 1);
+            }
+        }
+
+        for (String rule: rules.keySet()) {
+            System.out.println(rule+" was the best "+rules.get(rule)+" times.");
+        }
+
+        //List<String> bestOverallRules = getBestRules(bestRulesTotal);
         //at this stage, very likely one rule, if there are multiples then just pick one
-        String bestRule = bestOverallRules.get(0);
-        System.out.println("Best overall "+ruleType+" rule: "+bestRule);
+//        String bestRule = bestOverallRules.get(0);
+//        System.out.println("Best overall "+ruleType+" rule: "+bestRule);
     }
 
     public static List<String> EvaluateFile(String fileName, String ruleType) {
@@ -155,7 +170,7 @@ public class RuleComparison {
     }
 
     public static void main(String[] args) {
-        EvaluateOutput("/out/test/", "RR");
+        EvaluateOutput("/out/rule_comparisons/", "RR");
     }
 }
 

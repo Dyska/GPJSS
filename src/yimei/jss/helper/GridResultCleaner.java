@@ -56,7 +56,7 @@ public class GridResultCleaner {
         this.outPath =  GRID_PATH + simulationType+ "/cleaned/" + dirName;
         this.numPops = numPops;
         this.doIncludeGenerations = doIncludeGenerations;
-        if (simulationType == "Static") {
+        if (simulationType.toLowerCase() == "static") {
             isStatic = true;
             benchmarkMakespans = InitBenchmarkMakespans();
         } else {
@@ -289,7 +289,8 @@ public class GridResultCleaner {
     }
 
     public static void main(String args[]) {
-        GridResultCleaner grc = new GridResultCleaner("dynamic","simple", 1, true );
+        GridResultCleaner grc = new GridResultCleaner("static","simple",
+                1, true );
         grc.cleanResults();
     }
 }

@@ -1,6 +1,9 @@
 package yimei.jss.jobshop;
 
 import yimei.jss.rule.AbstractRule;
+import yimei.jss.rule.RuleType;
+import yimei.jss.rule.workcenter.basic.WIQ;
+import yimei.jss.simulation.RoutingDecisionSituation;
 import yimei.jss.simulation.state.SystemState;
 
 import java.util.ArrayList;
@@ -52,8 +55,9 @@ public class OperationOption implements Comparable<OperationOption> {
     public Operation getNext() { return operation.getNext(); }
 
     public OperationOption getNext(SystemState systemState, AbstractRule routingRule) {
-        if (operation.getNext() != null) {
-            return operation.getNext().getOperationOption(systemState, routingRule);
+        Operation nextOperation = operation.getNext();
+        if (nextOperation != null) {
+            return nextOperation.chooseOperationOption(systemState, routingRule);
         } return null;
     }
 

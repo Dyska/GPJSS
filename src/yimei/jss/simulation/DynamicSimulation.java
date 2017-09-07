@@ -87,7 +87,7 @@ public class DynamicSimulation extends Simulation {
                              double dueDateFactor,
                              boolean revisit) {
         this(seed, sequencingRule, routingRule, numWorkCenters, numJobsRecorded, warmupJobs,
-                minNumOperations, maxNumOperations,utilLevel, dueDateFactor, revisit,
+                minNumOperations, maxNumOperations, utilLevel, dueDateFactor, revisit,
                 new UniformIntegerSampler(minNumOperations, maxNumOperations),
                 new UniformSampler(1, 99),
                 new ExponentialSampler(),
@@ -255,19 +255,19 @@ public class DynamicSimulation extends Simulation {
         interArrivalTimeSampler.setMean(mean);
     }
 
-    public List<DecisionSituation> decisionSituations(int minQueueLength) {
-        List<DecisionSituation> decisionSituations = new ArrayList<>();
+    public List<SequencingDecisionSituation> decisionSituations(int minQueueLength) {
+        List<SequencingDecisionSituation> sequencingDecisionSituations = new ArrayList<>();
 
         while (!eventQueue.isEmpty() && throughput < numJobsRecorded) {
             AbstractEvent nextEvent = eventQueue.poll();
 
             systemState.setClockTime(nextEvent.getTime());
-            nextEvent.addDecisionSituation(this, decisionSituations, minQueueLength);
+            nextEvent.addDecisionSituation(this, sequencingDecisionSituations, minQueueLength);
         }
 
         resetState();
 
-        return decisionSituations;
+        return sequencingDecisionSituations;
     }
 
     @Override

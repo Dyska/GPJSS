@@ -2,13 +2,12 @@ package yimei.jss.jobshop;
 
 import yimei.jss.rule.AbstractRule;
 import yimei.jss.rule.RuleType;
-import yimei.jss.rule.workcenter.basic.SBT;
+import yimei.jss.rule.workcenter.basic.WIQ;
+import yimei.jss.simulation.RoutingDecisionSituation;
 import yimei.jss.simulation.state.SystemState;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Created by yimei on 22/09/16.
@@ -82,29 +81,13 @@ public class Operation {
         return best;
     }
 
-    /*
-    This method is to be called with the system state parameter. It allows for an
-    informed decision in choosing which operation option to use.
-     */
-    public OperationOption getOperationOption(SystemState systemState, AbstractRule routingRule) {
-        if (operationOptions.size() == 1) {
-            return operationOptions.iterator().next();
-        }
-
+    public OperationOption chooseOperationOption(SystemState systemState, AbstractRule routingRule) {
         if (routingRule == null) {
-            routingRule = new SBT(RuleType.ROUTING);
+            routingRule = new WIQ(RuleType.ROUTING);
         }
-
-        double lowestPriority = Double.POSITIVE_INFINITY;
-        OperationOption best = null;
-        for (OperationOption option: operationOptions) {
-            double priority = routingRule.priority(option, option.getWorkCenter(), systemState);
-            if (priority < lowestPriority || lowestPriority == Double.POSITIVE_INFINITY) {
-                lowestPriority = priority;
-                best = option;
-            }
-        }
-        return best;
+        RoutingDecisionSituation decisionSituation = new RoutingDecisionSituation(
+                operationOptions,systemState);
+        return routingRule.nextOperationOption(decisionSituation);
     }
 
     @Override
