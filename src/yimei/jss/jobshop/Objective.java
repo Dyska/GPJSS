@@ -65,7 +65,7 @@ public enum Objective {
             case MEAN_FLOWTIME:
                 return new SPT(RuleType.SEQUENCING);
             case MAX_FLOWTIME:
-                return new SPT(RuleType.SEQUENCING);
+                return new FCFS(RuleType.SEQUENCING);
             case MEAN_WEIGHTED_FLOWTIME:
                 return new WSPT(RuleType.SEQUENCING);
 //                return new TwoPTplusWINQplusNPT(RuleType.SEQUENCING);

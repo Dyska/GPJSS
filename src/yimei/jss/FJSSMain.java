@@ -237,6 +237,6 @@ public class FJSSMain {
             }
         }
 
-        EvaluateOutput("/out/rule_comparisons/", "RR");
+        //EvaluateOutput("/out/rule_comparisons/", "RR");
     }
 }

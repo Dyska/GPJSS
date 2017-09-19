@@ -40,11 +40,9 @@ for (filename in filenames) {
     if (startsWith(filename,"data-")) {
       startPos = 11
     }
-    print(filename)
     #shorten the file name to match instance names in bounds table
     instance_name = substring(filename,startPos,nchar(filename)-4)
 
-    print(instance_name)
     #get the bounds out of the table
     bounds = fjss_bounds[which(fjss_bounds["File"] == instance_name),]
     lb = bounds[["LB"]]
@@ -54,8 +52,6 @@ for (filename in filenames) {
     best_makespans = as.numeric(unlist(gp_results["Best"]))
     best_makespan_seed = which.min(best_makespans)
     best_makespan = best_makespans[best_makespan_seed]
-    print(best_makespan)
-    print(lb)
     best_by_lb = best_makespan/lb
     med_makespan = median(best_makespans)
     mean_makespan = mean(best_makespans)

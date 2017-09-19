@@ -23,7 +23,7 @@ public enum JobShopAttribute {
     // The machine-related attributes (independent of the jobs in the queue of the machine).
     NUM_OPS_IN_QUEUE("NIQ"), // the number of operations in the queue
     WORK_IN_QUEUE("WIQ"), // the work in the queue
-    MACHINE_READY_TIME("MRT"), // the ready time of the machi
+    MACHINE_READY_TIME("MRT"), // the ready time of the machine
     // The job/operation-related attributes (depend on the jobs in the queue).
     PROC_TIME("PT"), // the processing time of the operation
     NEXT_PROC_TIME("NPT"), // the processing time of the next operation
@@ -33,7 +33,7 @@ public enum JobShopAttribute {
     NUM_OPS_REMAINING("NOR"), // the number of operations remaining
     //WORK_IN_NEXT_QUEUE("WINQ"), // the work in the next queue
     //NUM_OPS_IN_NEXT_QUEUE("NINQ"), // number of operations in the next queue
-    FLOW_DUE_DATE("FDD"), // the flow due date
+    //FLOW_DUE_DATE("FDD"), // the flow due date
     DUE_DATE("DD"), // the due date
     WEIGHT("W"), // the job weight
     ARRIVAL_TIME("AT"), // the arrival time
@@ -42,7 +42,7 @@ public enum JobShopAttribute {
     MACHINE_WAITING_TIME("MWT"), // the waiting time of the machine = t - MRT
     OP_WAITING_TIME("OWT"), // the waiting time of the operation = t - ORT
     //NEXT_WAITING_TIME("NWT"), // the waiting time for the next machine to be ready = NRT - t
-    RELATIVE_FLOW_DUE_DATE("rFDD"), // the relative flow due date = FDD - t
+    //RELATIVE_FLOW_DUE_DATE("rFDD"), // the relative flow due date = FDD - t
     RELATIVE_DUE_DATE("rDD"), // the relative due date = DD - t
 
     // Used in Su's paper
@@ -121,12 +121,12 @@ public enum JobShopAttribute {
 //            case NUM_OPS_IN_NEXT_QUEUE:
 //                value = systemState.numOpsInNextQueue(op);
 //                break;
-            case FLOW_DUE_DATE:
-                value = op.getFlowDueDate();
-                break;
-            case RELATIVE_FLOW_DUE_DATE:
-                value = op.getFlowDueDate() - systemState.getClockTime();
-                break;
+//            case FLOW_DUE_DATE:
+//                value = op.getFlowDueDate();
+//                break;
+//            case RELATIVE_FLOW_DUE_DATE:
+//                value = op.getFlowDueDate() - systemState.getClockTime();
+//                break;
             case DUE_DATE:
                 value = op.getJob().getDueDate();
                 break;
@@ -191,7 +191,7 @@ public enum JobShopAttribute {
                 JobShopAttribute.NUM_OPS_REMAINING,
                 //JobShopAttribute.WORK_IN_NEXT_QUEUE,
                 //JobShopAttribute.NUM_OPS_IN_NEXT_QUEUE,
-                JobShopAttribute.FLOW_DUE_DATE,
+                //JobShopAttribute.FLOW_DUE_DATE,
                 JobShopAttribute.DUE_DATE,
                 JobShopAttribute.WEIGHT,
 
@@ -217,7 +217,7 @@ public enum JobShopAttribute {
                 JobShopAttribute.NUM_OPS_REMAINING,
                 //JobShopAttribute.WORK_IN_NEXT_QUEUE,
                 //JobShopAttribute.NUM_OPS_IN_NEXT_QUEUE,
-                JobShopAttribute.RELATIVE_FLOW_DUE_DATE,
+                //JobShopAttribute.RELATIVE_FLOW_DUE_DATE,
                 JobShopAttribute.RELATIVE_DUE_DATE,
                 JobShopAttribute.WEIGHT,
 
@@ -264,7 +264,7 @@ public enum JobShopAttribute {
                 JobShopAttribute.MACHINE_WAITING_TIME,
                 JobShopAttribute.OP_WAITING_TIME,
                 //JobShopAttribute.NEXT_READY_TIME,
-                JobShopAttribute.FLOW_DUE_DATE,
+                //JobShopAttribute.FLOW_DUE_DATE,
                 JobShopAttribute.DUE_DATE,
 
                 JobShopAttribute.WORK_IN_QUEUE,

@@ -153,8 +153,6 @@ public class Job implements Comparable<Job> {
         for (int i = operations.size()-1; i > -1; i--) {
             Operation operation = operations.get(i);
 
-            //difficult to know what to do here, as we do not at this point
-            //know which OperationOption we will use - using median value seems fair
             double medianProcTime;
             double[] procTimes = new double[operation.getOperationOptions().size()];
             for (int j = 0; j < operation.getOperationOptions().size(); ++j) {
@@ -163,10 +161,11 @@ public class Job implements Comparable<Job> {
             Arrays.sort(procTimes);
             if (procTimes.length % 2 == 0){
                 //halfway between two points, as even number of elements
-                medianProcTime = ((double) procTimes[procTimes.length/2] + (double)procTimes[procTimes.length/2 - 1])/2;
+                medianProcTime = (procTimes[procTimes.length/2]
+                        + procTimes[procTimes.length/2 - 1])/2;
             }
             else {
-                medianProcTime = (double) procTimes[procTimes.length / 2];
+                medianProcTime = procTimes[procTimes.length / 2];
             }
 
             for (OperationOption option: operation.getOperationOptions()) {

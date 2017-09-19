@@ -10,8 +10,8 @@ if (length(args) != 3) {
   stop("Three arguments must be supplied.", call.=FALSE)
 }
 
-#simulation_type = "dynamic"
-#a = "coevolution"
+#simulation_type = "static"
+#a = "coevolve"
 #b = "simple"
 simulation_type = args[1]
 a = args[2]
@@ -29,8 +29,8 @@ setwd(input_dir_a)
 filenames = list.files(input_dir_a)
 
 #create the matrix which will store all our results
-output_matrix = matrix(, nrow = length(filenames), ncol = 3)
-colnames(output_matrix) = c("filename","p-value","p<0.05")
+output_matrix = matrix(, nrow = length(filenames), ncol = 4)
+colnames(output_matrix) = c("filename",paste(a,">",b,sep=""),paste(a,"=",b,sep=""),paste(a,"<",b,sep=""))
 
 #lets process our results, and save them in the matrix we made
 
@@ -67,6 +67,9 @@ p_value_function = function(a, b) {
 i = 1
 for (filename in filenames) {
   if (endsWith(filename,".csv")) {
+    a_better = 0
+    b_better = 0
+    equal = 0
     
     setwd(input_dir_a)
     gp_results_a = read.csv(filename,header=TRUE)
@@ -77,8 +80,24 @@ for (filename in filenames) {
     gp_results_b = read.csv(filename,header=TRUE)
     best_makespans_b = as.numeric(unlist(gp_results_b["Best"]))
     
-    p = p_value_function(best_makespans_a,best_makespans_b)
-    output_matrix[i,] = c(filename, p, p<0.05)  
+    p_val_a = p_value_function(best_makespans_a,best_makespans_b)
+    if (is.na(p_val_a)) {
+      equal = 1
+    } else if (p_val_a >= 0.05) {
+      #either neither a and b is better, or b is better
+      p_val_b = p_value_function(best_makespans_b,best_makespans_a)
+      if (p_val_b < 0.05) {
+        #b is better than a for this file
+        b_better = 1
+      } else {
+        #equal
+        equal = 1
+      }
+    } else {
+      a_better = 1
+    }
+    
+    output_matrix[i,] = c(filename,a_better,equal,b_better)  
     i = i + 1
   }
 }
@@ -89,9 +108,9 @@ write.csv(output_matrix,file=output_file)
 
 print(paste("Wrote t-test results to directory:",output_dir))
 print(paste("Filename:",output_file))
-a_better = sum(output_matrix[,"p<0.05"]==TRUE,na.rm=TRUE)
-b_better = sum(output_matrix[,"p<0.05"]==FALSE,na.rm=TRUE)
-equal = length(filenames) - a_better - b_better
+a_better = sum(output_matrix[,2]==1)
+b_better = sum(output_matrix[,4]==1)
+equal = sum(output_matrix[,3]==1)
 print(paste(a,"was better in",a_better,"files."))
 print(paste(b,"was better in",b_better,"files."))
 print(paste("They were equal in",equal,"files."))
