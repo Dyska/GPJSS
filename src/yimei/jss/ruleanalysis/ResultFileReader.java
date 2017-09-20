@@ -1,9 +1,12 @@
 package yimei.jss.ruleanalysis;
 
 import ec.Fitness;
+import ec.Individual;
 import ec.gp.koza.KozaFitness;
 import ec.multiobjective.MultiObjectiveFitness;
+import org.apache.commons.math3.analysis.function.Abs;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import yimei.jss.rule.AbstractRule;
 import yimei.jss.rule.operation.evolved.GPRule;
 import yimei.util.lisp.LispSimplifier;
 
@@ -23,40 +26,140 @@ public class ResultFileReader {
 
     public static TestResult readTestResultFromFile(File file,
                                                     RuleType ruleType,
-                                                    boolean isMultiObjective) {
+                                                    boolean isMultiObjective,
+                                                    int numPopulations) {
         TestResult result = new TestResult();
 
         String line;
-        Fitness fitness = null;
-        GPRule rule = null;
+        Fitness[] fitnesses = new Fitness[numPopulations];
 
         try (BufferedReader br = new BufferedReader(new FileReader(file))) {
             while (!(line = br.readLine()).equals("Best Individual of Run:")) {
                 if (line.startsWith("Generation")) {
-                    br.readLine();
-                    br.readLine();
-                    br.readLine();
-                    line = br.readLine();
-                    fitness = readFitnessFromLine(line, isMultiObjective);
-                    br.readLine();
-                    String expression = br.readLine();
+                    br.readLine(); //Best individual:
 
-                    expression = LispSimplifier.simplifyExpression(expression);
+                    GPRule[] rules = new GPRule[numPopulations];
+                    GPRule[] collaborators = new GPRule[numPopulations];
+                    for (int i = 0; i < numPopulations; ++i) {
+                        br.readLine(); //Subpopulation i:
+                        br.readLine(); //Evaluated: true
+                        line = br.readLine(); //this will be either a fitness or collaborator rule
+                        if (numPopulations == 2) {
+                            //collaborator rule
+                            line = LispSimplifier.simplifyExpression(line);
 
-                    rule = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.SEQUENCING,expression);
-                    result.addGenerationalRule(rule);
+                            if (i == 0) {
+                                collaborators[i] = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.ROUTING, line);
+                            } else {
+                                collaborators[i] = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.SEQUENCING, line);
+                            }
+
+                            line = br.readLine(); //read in fitness on following line
+                        }
+                        fitnesses[i] = readFitnessFromLine(line, isMultiObjective);
+
+                        if (numPopulations == 2) {
+                            br.readLine(); //Collaborator 1 or 0:
+                        }
+
+                        br.readLine(); //Tree 0:
+                        String expression = br.readLine();
+
+                        expression = LispSimplifier.simplifyExpression(expression);
+
+                        if (i == 0) {
+                            //subpop 0 is sequencing rules
+                            rules[i] = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.SEQUENCING,expression);
+                        } else {
+                            //subpop 1 is routing rules
+                            rules[i] = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.ROUTING,expression);
+                        }
+                    }
+
+                    Fitness fitness = fitnesses[0];
+                    GPRule[] bestRules = rules; //will just be single rule for 1 subpop
+                    if (numPopulations == 2) {
+                        //need to decide which subpop yielded better fitnesses
+                        if (fitness.fitness() < fitnesses[1].fitness()) {
+                            //subpop 0 was best
+                            bestRules[0] = rules[0];
+                            bestRules[1] = collaborators[0];
+                        } else {
+                            //subpop 1 was best
+                            fitness = fitnesses[1];
+                            bestRules[0] = rules[1];
+                            bestRules[1] = collaborators[1];
+                        }
+                    }
+
+                    result.addGenerationalRules(bestRules);
                     result.addGenerationalTrainFitness(fitness);
-                    result.addGenerationalValidationFitnesses((Fitness)fitness.clone());
-                    result.addGenerationalTestFitnesses((Fitness)fitness.clone());
+                    result.addGenerationalValidationFitnesses((Fitness) fitness.clone());
+                    result.addGenerationalTestFitnesses((Fitness) fitness.clone());
                 }
             }
+
+            GPRule[] rules = new GPRule[numPopulations];
+            GPRule[] collaborators = new GPRule[numPopulations];
+            for (int i = 0; i < numPopulations; ++i) {
+                br.readLine(); //Subpopulation i:
+                br.readLine(); //Evaluated: true
+                line = br.readLine(); //this will be either a fitness or collaborator rule
+                if (numPopulations == 2) {
+                    //collaborator rule
+                    line = LispSimplifier.simplifyExpression(line);
+                    if (i == 0) {
+                        //subpop 0 is sequencing rules, so collab[0] is a routing rule
+                        collaborators[i] = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.ROUTING, line);
+                    } else {
+                        //subpop 1 is routing rules, so collab[1] is a sequencing rule
+                        collaborators[i] = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.SEQUENCING, line);
+                    }
+
+                    line = br.readLine(); //read in fitness on following line
+                }
+                fitnesses[i] = readFitnessFromLine(line, isMultiObjective);
+
+                if (numPopulations == 2) {
+                    br.readLine(); //Collaborator 1 or 0:
+                }
+
+                br.readLine(); //Tree 0:
+                String expression = br.readLine();
+
+                expression = LispSimplifier.simplifyExpression(expression);
+
+                if (i == 0) {
+                    //subpop 0 is sequencing rules
+                    rules[i] = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.SEQUENCING,expression);
+                } else {
+                    //subpop 1 is routing rules
+                    rules[i] = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.ROUTING,expression);
+                }
+            }
+
+            Fitness fitness = fitnesses[0];
+            GPRule[] bestRules = rules; //will just be single rule for 1 subpop
+            if (numPopulations == 2) {
+                //need to decide which subpop yielded better fitnesses
+                if (fitness.fitness() < fitnesses[1].fitness()) {
+                    //subpop 0 was best
+                    bestRules[0] = rules[0];
+                    bestRules[1] = collaborators[0];
+                } else {
+                    //subpop 1 was best
+                    fitness = fitnesses[1];
+                    bestRules[0] = rules[1];
+                    bestRules[1] = collaborators[1];
+                }
+            }
+
+            result.setBestRules(bestRules);
+            result.setBestTrainingFitness(fitness);
+
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        // Set the best rule as the rule in the last generation
-        result.setBestRule(rule);
-        result.setBestTrainingFitness(fitness);
 
         return result;
     }

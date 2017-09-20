@@ -32,8 +32,9 @@ public class RuleTestFeatureContribution extends RuleTest {
                                        String testScenario,
                                        String testSetName,
                                        List<Objective> objectives,
-                                       String featureSetName) {
-        super(trainPath, ruleType, numRuns, testScenario, testSetName, objectives);
+                                       String featureSetName,
+                                       int numPopulations) {
+        super(trainPath, ruleType, numRuns, testScenario, testSetName, objectives, numPopulations);
         this.featureSetName = featureSetName;
     }
 
@@ -42,8 +43,10 @@ public class RuleTestFeatureContribution extends RuleTest {
                                        int numRuns,
                                        String testScenario,
                                        String testSetName,
-                                       String featureSetName) {
-        this(trainPath, ruleType, numRuns, testScenario, testSetName, new ArrayList<>(), featureSetName);
+                                       String featureSetName,
+                                       int numPopulations) {
+        this(trainPath, ruleType, numRuns, testScenario, testSetName,
+                new ArrayList<>(), featureSetName, numPopulations);
     }
 
     public List<GPNode> featuresFromSetName() {
@@ -84,18 +87,18 @@ public class RuleTestFeatureContribution extends RuleTest {
         for (int i = 0; i < numRuns; i++) {
             File sourceFile = new File(trainPath + "job." + i + ".out.stat");
 
-            TestResult result = TestResult.readFromFile(sourceFile, ruleType);
+            TestResult result = TestResult.readFromFile(sourceFile, ruleType, numPopulations);
 
             long start = System.currentTimeMillis();
 
-            GPRule bestRule = (GPRule) result.getBestRule();
+            GPRule[] bestRules = (GPRule[]) result.getBestRules();
 
             MultiObjectiveFitness allFeaturesFit = new MultiObjectiveFitness();
             allFeaturesFit.objectives = new double[1];
             allFeaturesFit.maxObjective = new double[1];
             allFeaturesFit.minObjective = new double[1];
             allFeaturesFit.maximize = new boolean[1];
-            //bestRule.calcFitness(allFeaturesFit, null, testSet, objectives);
+            bestRules[0].calcFitness(allFeaturesFit, null, testSet, bestRules[1], objectives);
 
             for (int j = 0; j < features.size(); j++) {
                 GPNode feature = features.get(j);
@@ -105,10 +108,20 @@ public class RuleTestFeatureContribution extends RuleTest {
                 fit.minObjective = new double[1];
                 fit.maximize = new boolean[1];
 
-                GPRule tmpRule = new GPRule(yimei.jss.rule.RuleType.SEQUENCING, (GPTree)(bestRule.getGPTree().clone()));
+                GPRule tempSeqRule;
+                GPRule tempRoutingRule;
+                if (bestRules[0].getType() == yimei.jss.rule.RuleType.SEQUENCING) {
+                    tempSeqRule = new GPRule(yimei.jss.rule.RuleType.SEQUENCING, (GPTree)(bestRules[0].getGPTree().clone()));
+                    tempRoutingRule = new GPRule(yimei.jss.rule.RuleType.ROUTING, (GPTree)(bestRules[1].getGPTree().clone()));
+                } else {
+                    tempSeqRule = new GPRule(yimei.jss.rule.RuleType.SEQUENCING, (GPTree)(bestRules[1].getGPTree().clone()));
+                    tempRoutingRule = new GPRule(yimei.jss.rule.RuleType.ROUTING, (GPTree)(bestRules[0].getGPTree().clone()));
+                }
 
-                tmpRule.ignore(feature, ignorer);
-                //tmpRule.calcFitness(fit, null, testSet, objectives);
+                //TODO: What do we do here? Which rule do we ignore features from? One at a time?
+
+                tempSeqRule.ignore(feature, ignorer);
+                tempSeqRule.calcFitness(fit, null, testSet, tempRoutingRule, objectives);
 
                 System.out.format("Run %d, %s: %.2f\n", i, feature.toString(),
                         fit.fitness() - allFeaturesFit.fitness());
@@ -150,6 +163,8 @@ public class RuleTestFeatureContribution extends RuleTest {
         idx ++;
         String testSetName = args[idx];
         idx ++;
+        int numPopulations = Integer.valueOf(args[idx]);
+        idx ++;
         int numObjectives = Integer.valueOf(args[idx]);
         idx ++;
         List<Objective> objectives = new ArrayList<>();
@@ -161,7 +176,7 @@ public class RuleTestFeatureContribution extends RuleTest {
         idx ++;
 
         RuleTestFeatureContribution ruleTest = new RuleTestFeatureContribution(trainPath,
-                ruleType, numRuns, testScenario, testSetName, objectives, featureSetName);
+                ruleType, numRuns, testScenario, testSetName, objectives, featureSetName, numPopulations);
 
         ruleTest.writeToCSV();
     }

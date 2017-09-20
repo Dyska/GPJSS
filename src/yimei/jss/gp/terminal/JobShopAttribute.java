@@ -24,6 +24,7 @@ public enum JobShopAttribute {
     NUM_OPS_IN_QUEUE("NIQ"), // the number of operations in the queue
     WORK_IN_QUEUE("WIQ"), // the work in the queue
     MACHINE_READY_TIME("MRT"), // the ready time of the machine
+
     // The job/operation-related attributes (depend on the jobs in the queue).
     PROC_TIME("PT"), // the processing time of the operation
     NEXT_PROC_TIME("NPT"), // the processing time of the next operation
@@ -42,7 +43,7 @@ public enum JobShopAttribute {
     MACHINE_WAITING_TIME("MWT"), // the waiting time of the machine = t - MRT
     OP_WAITING_TIME("OWT"), // the waiting time of the operation = t - ORT
     //NEXT_WAITING_TIME("NWT"), // the waiting time for the next machine to be ready = NRT - t
-    //RELATIVE_FLOW_DUE_DATE("rFDD"), // the relative flow due date = FDD - t
+    RELATIVE_FLOW_DUE_DATE("rFDD"), // the relative flow due date = FDD - t
     RELATIVE_DUE_DATE("rDD"), // the relative due date = DD - t
 
     // Used in Su's paper
@@ -124,9 +125,9 @@ public enum JobShopAttribute {
 //            case FLOW_DUE_DATE:
 //                value = op.getFlowDueDate();
 //                break;
-//            case RELATIVE_FLOW_DUE_DATE:
-//                value = op.getFlowDueDate() - systemState.getClockTime();
-//                break;
+            case RELATIVE_FLOW_DUE_DATE:
+                value = op.getFlowDueDate() - systemState.getClockTime();
+                break;
             case DUE_DATE:
                 value = op.getJob().getDueDate();
                 break;
@@ -217,7 +218,7 @@ public enum JobShopAttribute {
                 JobShopAttribute.NUM_OPS_REMAINING,
                 //JobShopAttribute.WORK_IN_NEXT_QUEUE,
                 //JobShopAttribute.NUM_OPS_IN_NEXT_QUEUE,
-                //JobShopAttribute.RELATIVE_FLOW_DUE_DATE,
+                JobShopAttribute.RELATIVE_FLOW_DUE_DATE,
                 JobShopAttribute.RELATIVE_DUE_DATE,
                 JobShopAttribute.WEIGHT,
 

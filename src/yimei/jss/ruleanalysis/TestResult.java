@@ -14,11 +14,11 @@ import yimei.jss.rule.AbstractRule;
 
 public class TestResult {
 
-	private List<AbstractRule> generationalRules;
+	private List<AbstractRule[]> generationalRules;
 	private List<Fitness> generationalTrainFitnesses;
 	private List<Fitness> generationalValidationFitnesses;
 	private List<Fitness> generationalTestFitnesses;
-	private AbstractRule bestRule;
+	private AbstractRule[] bestRules;
 	private Fitness bestTrainingFitness;
 	private Fitness bestValidationFitness;
 	private Fitness bestTestFitness;
@@ -33,11 +33,11 @@ public class TestResult {
 		generationalTestFitnesses = new ArrayList<>();
 	}
 
-	public List<AbstractRule> getGenerationalRules() {
+	public List<AbstractRule[]> getGenerationalRules() {
 		return generationalRules;
 	}
 
-	public AbstractRule getGenerationalRule(int idx) {
+	public AbstractRule[] getGenerationalRules(int idx) {
 		return generationalRules.get(idx);
 	}
 
@@ -65,8 +65,8 @@ public class TestResult {
 		return generationalTestFitnesses.get(idx);
 	}
 
-	public AbstractRule getBestRule() {
-		return bestRule;
+	public AbstractRule[] getBestRules() {
+		return bestRules;
 	}
 
 	public Fitness getBestTrainingFitness() {
@@ -89,12 +89,12 @@ public class TestResult {
 		return generationalTimeStat.getElement(gen);
 	}
 
-	public void setGenerationalRules(List<AbstractRule> generationalRules) {
+	public void setGenerationalRules(List<AbstractRule[]> generationalRules) {
 		this.generationalRules = generationalRules;
 	}
 
-	public void addGenerationalRule(AbstractRule rule) {
-		this.generationalRules.add(rule);
+	public void addGenerationalRules(AbstractRule[] rules) {
+		this.generationalRules.add(rules);
 	}
 
 	public void setGenerationalTrainFitnesses(List<Fitness> generationalTrainFitnesses) {
@@ -105,7 +105,7 @@ public class TestResult {
 		this.generationalTrainFitnesses.add(f);
 	}
 
-	public void setGenerationalValidationFitnesses(List<Fitness> generationalValidationFitnesses) {
+	public void setGenerationalValidationFitness(List<Fitness> generationalValidationFitnesses) {
 		this.generationalValidationFitnesses = generationalValidationFitnesses;
 	}
 
@@ -121,33 +121,34 @@ public class TestResult {
 		this.generationalTestFitnesses.add(f);
 	}
 
-	public void setBestRule(AbstractRule bestRule) {
-		this.bestRule = bestRule;
+	public void setBestRules(AbstractRule[] bestRules) {
+		this.bestRules = bestRules;
 	}
 
 	public void setBestTrainingFitness(Fitness bestTrainingFitness) {
 		this.bestTrainingFitness = bestTrainingFitness;
 	}
 
-	public void setBestValidationFitness(Fitness bestValidationFitness) {
-		this.bestValidationFitness = bestValidationFitness;
+	public void setBestValidationFitness(Fitness bestValidationFitnesses) {
+		this.bestValidationFitness = bestValidationFitnesses;
 	}
 
-	public void setBestTestFitness(Fitness bestTestFitness) {
-		this.bestTestFitness = bestTestFitness;
+	public void setBestTestFitness(Fitness bestTestFitnesses) {
+		this.bestTestFitness = bestTestFitnesses;
 	}
 
 	public void setGenerationalTimeStat(DescriptiveStatistics generationalTimeStat) {
 		this.generationalTimeStat = generationalTimeStat;
 	}
 
-	public static TestResult readFromFile(File file, RuleType ruleType) {
-		return ResultFileReader.readTestResultFromFile(file, ruleType, ruleType.isMultiobjective());
+	public static TestResult readFromFile(File file, RuleType ruleType, int numPopulations) {
+		return ResultFileReader.readTestResultFromFile(file, ruleType, ruleType.isMultiobjective(), numPopulations);
 	}
 
 	public void validate(List<Objective> objectives) {
 		SchedulingSet validationSet =
-				SchedulingSet.dynamicMissingSet(validationSimSeed, 0.95, 4.0, objectives, 50);
+				SchedulingSet.dynamicMissingSet(validationSimSeed, 0.95,
+						4.0, objectives, 50);
 
 		Fitness validationFitness;
 		if (objectives.size() == 1) {
@@ -156,10 +157,10 @@ public class TestResult {
 		}
 		else {
 			validationFitness = new MultiObjectiveFitness();
-			bestValidationFitness = new MultiObjectiveFitness();
+            bestValidationFitness = new MultiObjectiveFitness();
 		}
 
-		bestRule = generationalRules.get(0);
+		bestRules = generationalRules.get(0);
 
 		//bestRule.calcFitness(bestValidationFitness, null, validationSet, objectives);
 		generationalValidationFitnesses.add(bestValidationFitness);
@@ -174,7 +175,7 @@ public class TestResult {
 //			System.out.println("Generation " + i + ": validation fitness = " + validationFitness.fitness());
 
 			if (validationFitness.betterThan(bestValidationFitness)) {
-				bestRule = generationalRules.get(i);
+				bestRules = generationalRules.get(i);
 				bestTrainingFitness = generationalTrainFitnesses.get(i);
 				bestValidationFitness = validationFitness;
 			}

@@ -28,8 +28,9 @@ public class RuleTestFreqCounter extends RuleTest {
                                String testScenario,
                                String testSetName,
                                List<Objective> objectives,
-                               String featureSetName) {
-        super(trainPath, ruleType, numRuns, testScenario, testSetName, objectives);
+                               String featureSetName,
+                               int numPopulations) {
+        super(trainPath, ruleType, numRuns, testScenario, testSetName, objectives, numPopulations);
         this.featureSetName = featureSetName;
     }
 
@@ -38,8 +39,10 @@ public class RuleTestFreqCounter extends RuleTest {
                                int numRuns,
                                String testScenario,
                                String testSetName,
-                               String featureSetName) {
-        this(trainPath, ruleType, numRuns, testScenario, testSetName, new ArrayList<>(), featureSetName);
+                               String featureSetName,
+                               int numPopulations) {
+        this(trainPath, ruleType, numRuns, testScenario, testSetName,
+                new ArrayList<>(), featureSetName, numPopulations);
     }
 
     public List<GPNode> featuresFromSetName() {
@@ -102,12 +105,18 @@ public class RuleTestFreqCounter extends RuleTest {
             System.out.println("run: " + i);
             File sourceFile = new File(trainPath + "job." + i + ".out.stat");
 
-            TestResult result = TestResult.readFromFile(sourceFile, ruleType);
+            TestResult result = TestResult.readFromFile(sourceFile, ruleType, numPopulations);
 
-            GPRule bestRule = (GPRule)(result.getBestRule());
+            GPRule[] bestRules = (GPRule[]) (result.getBestRules());
+            GPRule seqRule;
+            if (bestRules[0].getType() == yimei.jss.rule.RuleType.SEQUENCING) {
+                seqRule = bestRules[0];
+            } else {
+                seqRule = bestRules[1];
+            }
 
-            numTerminals[i] = bestRule.getGPTree().child.numNodes(GPNode.NODESEARCH_TERMINALS);
-            countFeatureFreq(featureFreqMtx[i], bestRule.getGPTree().child);
+            numTerminals[i] = seqRule.getGPTree().child.numNodes(GPNode.NODESEARCH_TERMINALS);
+            countFeatureFreq(featureFreqMtx[i], seqRule.getGPTree().child);
         }
 
         try {
@@ -141,6 +150,7 @@ public class RuleTestFreqCounter extends RuleTest {
         String testScenario = "";
         String testSetName = "";
         int numObjectives = 0;
+        int numPopulations = 1;
         List<Objective> objectives = new ArrayList<>();
         String featureSetName = "";
         for (int i = 0; i < algos.length; i++) {
@@ -149,7 +159,7 @@ public class RuleTestFreqCounter extends RuleTest {
                 featureSetName = fsNames[i];
 
                 RuleTestFreqCounter ruleTest = new RuleTestFreqCounter(trainPath,
-                        ruleType, numRuns, testScenario, testSetName, objectives, featureSetName);
+                        ruleType, numRuns, testScenario, testSetName, objectives, featureSetName, numPopulations);
 
                 ruleTest.writeToCSV();
             }
