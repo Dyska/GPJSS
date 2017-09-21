@@ -6,6 +6,7 @@ import yimei.jss.jobshop.Objective;
 import yimei.jss.jobshop.SchedulingSet;
 import yimei.jss.rule.AbstractRule;
 import yimei.jss.rule.operation.evolved.GPRule;
+import yimei.jss.rule.workcenter.basic.WIQ;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -109,9 +110,15 @@ public class RuleTest {
 
             for (int j = 0; j < result.getGenerationalRules().size(); j++) {
                 AbstractRule[] generationalRules = result.getGenerationalRules(j);
-                generationalRules[0].calcFitness(
-                        result.getGenerationalTestFitness(j), null,
-                        testSet, generationalRules[1],objectives);
+                if (numPopulations == 2) {
+                    generationalRules[0].calcFitness(
+                            result.getGenerationalTestFitness(j), null,
+                            testSet, generationalRules[1], objectives);
+                } else {
+                    AbstractRule routingRule = new WIQ(yimei.jss.rule.RuleType.ROUTING);
+                    generationalRules[0].calcFitness(result.getGenerationalTestFitness(j), null,
+                            testSet, routingRule, objectives);
+                }
 
                 System.out.println("Generation " + j + ": test fitness = " +
                         result.getGenerationalTestFitness(j).fitness());
@@ -139,23 +146,32 @@ public class RuleTest {
                     MultiObjectiveFitness testFit =
                             (MultiObjectiveFitness)result.getGenerationalTestFitness(j);
                     GPRule[] rules = (GPRule[]) result.getGenerationalRules(j);
-                    GPRule seqRule;
-                    GPRule routRule;
-                    if (rules[0].getType() == yimei.jss.rule.RuleType.SEQUENCING) {
-                        seqRule = rules[0];
-                        routRule = rules[1];
+                    GPRule seqRule = null;
+                    GPRule routRule = null;
+                    if (numPopulations == 2) {
+                        if (rules[0].getType() == yimei.jss.rule.RuleType.SEQUENCING) {
+                            seqRule = rules[0];
+                            routRule = rules[1];
+                        } else {
+                            seqRule = rules[1];
+                            routRule = rules[0];
+                        }
                     } else {
-                        seqRule = rules[1];
-                        routRule = rules[0];
+                        seqRule = rules[0];
                     }
+
 
                     UniqueTerminalsGatherer gatherer = new UniqueTerminalsGatherer();
                     int numUniqueTerminalsSeq = seqRule.getGPTree().child.numNodes(gatherer);
                     int seqRuleSize = seqRule.getGPTree().child.numNodes(GPNode.NODESEARCH_ALL);
 
-                    gatherer = new UniqueTerminalsGatherer();
-                    int numUniqueTerminalsRout = routRule.getGPTree().child.numNodes(gatherer);
-                    int routRuleSize = routRule.getGPTree().child.numNodes(GPNode.NODESEARCH_ALL);
+                    int numUniqueTerminalsRout = 0;
+                    int routRuleSize = 0;
+                    if (numPopulations == 2) {
+                        gatherer = new UniqueTerminalsGatherer();
+                        numUniqueTerminalsRout = routRule.getGPTree().child.numNodes(gatherer);
+                        routRuleSize = routRule.getGPTree().child.numNodes(GPNode.NODESEARCH_ALL);
+                    }
 
                     if (objectives.size() == 1) {
                         writer.write(i + "," + j + "," +
@@ -190,13 +206,15 @@ public class RuleTest {
 
     /**
      * Call this main method with several parameters
-     * 1) TrainPath - /Users/dyska/Desktop/Uni/COMP489/GPJSS/grid_results/dynamic/raw/simple-fixed/0.85-max-flowtime/
-     * 2) RuleType (Enum) - simple-rule
-     * 3) Number of runs - 30 (this is the number of job.i.out.stat files
-     * 4) Test Scenario - dynamic-job-shop
-     * 5) Test Set Name - missing-0.85-4.0
-     * 6) Number of objectives - 1
-     * 7) Objective - max-flowtime
+     *
+     * /Users/dyska/Desktop/Uni/COMP489/GPJSS/grid_results/dynamic/raw/coevolution-fixed/0.85-max-flowtime/
+     * simple-rule
+     * 30
+     * dynamic-job-shop
+     * missing-0.85-4.0
+     * 2
+     * 1
+     * max-flowtime
      */
 	public static void main(String[] args) {
 		int idx = 0;
