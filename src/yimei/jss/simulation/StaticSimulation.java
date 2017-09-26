@@ -3,6 +3,7 @@ package yimei.jss.simulation;
 import yimei.jss.jobshop.*;
 import yimei.jss.jobshop.Process;
 import yimei.jss.rule.AbstractRule;
+import yimei.jss.simulation.event.AbstractEvent;
 import yimei.jss.simulation.event.ProcessFinishEvent;
 
 import java.util.ArrayList;
@@ -112,6 +113,36 @@ public class StaticSimulation extends Simulation {
                                 int numJobsRecorded,
                                 int warmupJobs) {
         return this;
+    }
+
+    public List<SequencingDecisionSituation> sequencingDecisionSituations(int minQueueLength) {
+        List<SequencingDecisionSituation> sequencingDecisionSituations = new ArrayList<>();
+
+        while (!eventQueue.isEmpty() && throughput < numJobsRecorded) {
+            AbstractEvent nextEvent = eventQueue.poll();
+
+            systemState.setClockTime(nextEvent.getTime());
+            nextEvent.addSequencingDecisionSituation(this, sequencingDecisionSituations, minQueueLength);
+        }
+
+        resetState();
+
+        return sequencingDecisionSituations;
+    }
+
+    public List<RoutingDecisionSituation> routingDecisionSituations(int minQueueLength) {
+        List<RoutingDecisionSituation> routingDecisionSituations = new ArrayList<>();
+
+        while (!eventQueue.isEmpty() && throughput < numJobsRecorded) {
+            AbstractEvent nextEvent = eventQueue.poll();
+
+            systemState.setClockTime(nextEvent.getTime());
+            nextEvent.addRoutingDecisionSituation(this, routingDecisionSituations, minQueueLength);
+        }
+
+        resetState();
+
+        return routingDecisionSituations;
     }
 
     public Process createDummyProcess(WorkCenter workCenter, double readyTime) {

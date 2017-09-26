@@ -20,7 +20,7 @@ public class ClearingEvaluator extends SimpleEvaluator {
     protected double radius;
     protected int capacity;
 
-    protected PhenoCharacterisation phenoCharacterisation;
+    protected PhenoCharacterisation[] phenoCharacterisation;
 
     public double getRadius() {
         return radius;
@@ -30,8 +30,12 @@ public class ClearingEvaluator extends SimpleEvaluator {
         return capacity;
     }
 
-    public PhenoCharacterisation getPhenoCharacterisation() {
+    public PhenoCharacterisation[] getPhenoCharacterisation() {
         return phenoCharacterisation;
+    }
+
+    public PhenoCharacterisation getPhenoCharacterisation(int index) {
+        return phenoCharacterisation[index];
     }
 
     public void setup(final EvolutionState state, final Parameter base) {
@@ -42,14 +46,23 @@ public class ClearingEvaluator extends SimpleEvaluator {
         capacity = state.parameters.getIntWithDefault(
                 base.push(P_CAPACITY), null, 1);
         String filePath = state.parameters.getString(new Parameter("filePath"), null);
+        //It's a little tricky to know whether we have 1 or 2 populations here, so we will assume
+        //2 for the purpose of the phenoCharacterisation, and ignore the second object if only
+        //1 is used
+        phenoCharacterisation = new PhenoCharacterisation[2];
         if (filePath == null) {
             //dynamic simulation
-            phenoCharacterisation =
-                    PhenoCharacterisation.defaultPhenoCharacterisation();
+            phenoCharacterisation[0] =
+                    SequencingPhenoCharacterisation.defaultPhenoCharacterisation();
+            //
+//            phenoCharacterisation[1] =
+//                    RoutingPhenoCharacterisation.defaultPhenoCharacterisation();
         } else {
             //static simulation
-            phenoCharacterisation =
-                    PhenoCharacterisation.defaultPhenoCharacterisation(filePath);
+            phenoCharacterisation[0] =
+                    SequencingPhenoCharacterisation.defaultPhenoCharacterisation(filePath);
+//            phenoCharacterisation[1] =
+//                    SequencingPhenoCharacterisation.defaultPhenoCharacterisation();
         }
     }
 

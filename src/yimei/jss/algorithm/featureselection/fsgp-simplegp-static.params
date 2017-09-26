@@ -226,9 +226,10 @@ eval.problem.eval-model.sim-models = 1
 eval.problem.eval-model.sim-models.0.util-level = 0.85
 eval.problem.eval-model.rotate-sim-seed = false
 
-pre-generations = 51
+pre-generations = 50
 pop-adapt-frac-elites = 0
 pop-adapt-frac-adapted = 0.1
+feature-selection-adapt-population = false
 
 terminals-from = relative
 ignorer = yimei.jss.feature.ignore.SimpleIgnorer

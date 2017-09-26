@@ -1,17 +1,14 @@
 package yimei.jss.simulation;
 
-import yimei.jss.jobshop.Operation;
 import yimei.jss.jobshop.OperationOption;
-import yimei.jss.jobshop.WorkCenter;
 import yimei.jss.simulation.state.SystemState;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by dyska on 7/09/17.
  */
-public class RoutingDecisionSituation {
+public class RoutingDecisionSituation extends DecisionSituation {
 
     private List<OperationOption> queue;
     private SystemState systemState;
@@ -24,7 +21,6 @@ public class RoutingDecisionSituation {
     public List<OperationOption> getQueue() {
         return queue;
     }
-
 
     public SystemState getSystemState() {
         return systemState;

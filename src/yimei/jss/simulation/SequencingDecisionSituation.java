@@ -12,7 +12,7 @@ import java.util.List;
  *
  * Created by YiMei on 3/10/16.
  */
-public class SequencingDecisionSituation {
+public class SequencingDecisionSituation extends DecisionSituation {
 
     private List<OperationOption> queue;
     private WorkCenter workCenter;

@@ -2,13 +2,14 @@ package yimei.jss.niching;
 
 import yimei.jss.jobshop.FlexibleStaticInstance;
 import yimei.jss.jobshop.OperationOption;
+import yimei.jss.jobshop.WorkCenter;
 import yimei.jss.rule.AbstractRule;
 import yimei.jss.rule.RuleType;
 import yimei.jss.rule.operation.weighted.WSPT;
 import yimei.jss.rule.workcenter.basic.WIQ;
-import yimei.jss.simulation.SequencingDecisionSituation;
-import yimei.jss.simulation.DynamicSimulation;
+import yimei.jss.simulation.*;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
@@ -18,53 +19,57 @@ import java.util.Random;
  *
  * Created by YiMei on 3/10/16.
  */
-public class PhenoCharacterisation {
+public abstract class PhenoCharacterisation {
+    protected AbstractRule referenceRule;
 
-    private List<SequencingDecisionSituation> sequencingDecisionSituations;
-    private AbstractRule referenceRule;
-    private int[] referenceIndexes;
-
-    public PhenoCharacterisation(List<SequencingDecisionSituation> sequencingDecisionSituations,
-                                 AbstractRule referenceRule) {
-        this.sequencingDecisionSituations = sequencingDecisionSituations;
+    public PhenoCharacterisation(AbstractRule referenceRule) {
         this.referenceRule = referenceRule;
-        referenceIndexes = new int[sequencingDecisionSituations.size()];
-
-        calcReferenceIndexes();
-    }
-
-    public List<SequencingDecisionSituation> getSequencingDecisionSituations() {
-        return sequencingDecisionSituations;
     }
 
     public AbstractRule getReferenceRule() {
         return referenceRule;
     }
 
-    public int[] getReferenceIndexes() {
-        return referenceIndexes;
-    }
-
-    private void calcReferenceIndexes() {
-        for (int i = 0; i < sequencingDecisionSituations.size(); i++) {
-            SequencingDecisionSituation situation = sequencingDecisionSituations.get(i);
-            OperationOption op = referenceRule.priorOperation(situation);
-            int index = situation.getQueue().indexOf(op);
-            referenceIndexes[i] = index;
-        }
-    }
+    abstract void calcReferenceIndexes();
 
     public void setReferenceRule(AbstractRule rule) {
         this.referenceRule = rule;
+        calcReferenceIndexes();
+    }
+
+
+
+    public abstract int[] characterise(AbstractRule rule);
+
+    public static double distance(int[] charList1, int[] charList2) {
+        double distance = 0.0;
+        for (int i = 0; i < charList1.length; i++) {
+            double diff = charList1[i] - charList2[i];
+            distance += diff * diff;
+        }
+
+        return Math.sqrt(distance);
+    }
+}
+
+class SequencingPhenoCharacterisation extends PhenoCharacterisation {
+    private List<SequencingDecisionSituation> decisionSituations;
+    private int[] referenceIndexes;
+
+    public SequencingPhenoCharacterisation(AbstractRule sequencingReferenceRule,
+                                       List<SequencingDecisionSituation> decisionSituations) {
+        super(sequencingReferenceRule);
+        this.decisionSituations = decisionSituations;
+        this.referenceIndexes = new int[decisionSituations.size()];
 
         calcReferenceIndexes();
     }
 
     public int[] characterise(AbstractRule rule) {
-        int[] charList = new int[sequencingDecisionSituations.size()];
+        int[] charList = new int[decisionSituations.size()];
 
-        for (int i = 0; i < sequencingDecisionSituations.size(); i++) {
-            SequencingDecisionSituation situation = sequencingDecisionSituations.get(i);
+        for (int i = 0; i < decisionSituations.size(); i++) {
+            SequencingDecisionSituation situation = decisionSituations.get(i);
             List<OperationOption> queue = situation.getQueue();
 
             int refIdx = referenceIndexes[i];
@@ -89,50 +94,174 @@ public class PhenoCharacterisation {
         return charList;
     }
 
+    void calcReferenceIndexes() {
+        for (int i = 0; i < decisionSituations.size(); i++) {
+            SequencingDecisionSituation situation = decisionSituations.get(i);
+            OperationOption op = referenceRule.priorOperation(situation);
+            int index = situation.getQueue().indexOf(op);
+            referenceIndexes[i] = index;
+        }
+    }
+
     public static PhenoCharacterisation defaultPhenoCharacterisation() {
-        AbstractRule refRule = new WSPT(RuleType.SEQUENCING);
+        AbstractRule defaultSequencingRule = new WSPT(RuleType.SEQUENCING);
         AbstractRule defaultRoutingRule = new WIQ(RuleType.ROUTING);
-        int minQueueLength = 10;
+        int minQueueLength = 8;
         int numDecisionSituations = 20;
         long shuffleSeed = 8295342;
 
-        DynamicSimulation simulation = DynamicSimulation.standardFull(0, refRule, defaultRoutingRule,
-                10, 500, 0, 0.95, 4.0);
+        DynamicSimulation simulation = DynamicSimulation.standardFull(0, defaultSequencingRule,
+                defaultRoutingRule, 10, 500, 0,
+                0.95, 4.0);
 
-        List<SequencingDecisionSituation> situations = simulation.decisionSituations(minQueueLength);
+        List<SequencingDecisionSituation> situations = simulation.sequencingDecisionSituations(minQueueLength);
         Collections.shuffle(situations, new Random(shuffleSeed));
 
         situations = situations.subList(0, numDecisionSituations);
-        return new PhenoCharacterisation(situations, refRule);
+        return new SequencingPhenoCharacterisation(defaultSequencingRule, situations);
     }
 
     public static PhenoCharacterisation defaultPhenoCharacterisation(String filePath) {
-        AbstractRule refRule = new WSPT(RuleType.SEQUENCING);
+        AbstractRule defaultSequencingRule = new WSPT(RuleType.SEQUENCING);
         AbstractRule defaultRoutingRule = new WIQ(RuleType.ROUTING);
         FlexibleStaticInstance flexibleStaticInstance = FlexibleStaticInstance.readFromAbsPath(filePath);
-        //StaticSimulation simulation = new StaticSimulation(refRule,defaultRoutingRule,flexibleStaticInstance);
+        StaticSimulation simulation = new StaticSimulation(defaultSequencingRule, defaultRoutingRule,
+                flexibleStaticInstance);
 
-        int minQueueLength = 10;
+        int minQueueLength = 8; // some flexible static instances will have short queues
         int numDecisionSituations = 20;
         long shuffleSeed = 8295342;
 
-        DynamicSimulation simulation = DynamicSimulation.standardFull(0, refRule, defaultRoutingRule,
-                10, 500, 0, 0.95, 4.0);
+        //the number of sequencing decisions available of a given queue length will vary
+        //greatly for different statics instances, so we'll start with 8 and decrease
+        //the min queue length until we can get at least 20
+        List<SequencingDecisionSituation> situations = simulation.sequencingDecisionSituations(minQueueLength);
+        while (situations.size() < numDecisionSituations && minQueueLength > 2) {
+            minQueueLength--;
+            situations = simulation.sequencingDecisionSituations(minQueueLength);
+        }
 
-        List<SequencingDecisionSituation> situations = simulation.decisionSituations(minQueueLength);
+        if (minQueueLength == 2 && situations.size() < 20) {
+            //no point going to queue length of 1, as this will only have 1 outcome
+            System.out.println("Sequencing pheno characterisation with only "+situations.size() +" instances.");
+        }
+
         Collections.shuffle(situations, new Random(shuffleSeed));
 
         situations = situations.subList(0, numDecisionSituations);
-        return new PhenoCharacterisation(situations, refRule);
+        return new SequencingPhenoCharacterisation(defaultSequencingRule, situations);
     }
 
-    public static double distance(int[] charList1, int[] charList2) {
-        double distance = 0.0;
-        for (int i = 0; i < charList1.length; i++) {
-            double diff = charList1[i] - charList2[i];
-            distance += diff * diff;
+    public List<SequencingDecisionSituation> getDecisionSituations() {
+        return decisionSituations;
+    }
+
+    public int[] getReferenceIndexes() {
+        return referenceIndexes;
+    }
+}
+
+class RoutingPhenoCharacterisation extends PhenoCharacterisation {
+    private List<RoutingDecisionSituation> decisionSituations;
+    private int[] referenceIndexes;
+
+    public RoutingPhenoCharacterisation(AbstractRule routingReferenceRule,
+                                           List<RoutingDecisionSituation> decisionSituations) {
+        super(routingReferenceRule);
+        this.decisionSituations = decisionSituations;
+        this.referenceIndexes = new int[decisionSituations.size()];
+
+        calcReferenceIndexes();
+    }
+
+    public int[] characterise(AbstractRule rule) {
+        int[] charList = new int[decisionSituations.size()];
+
+        for (int i = 0; i < decisionSituations.size(); i++) {
+            RoutingDecisionSituation situation = decisionSituations.get(i);
+            List<OperationOption> queue = situation.getQueue();
+
+            int refIdx = referenceIndexes[i];
+
+            // Calculate the priority for all the operations.
+            for (OperationOption op : queue) {
+                op.setPriority(rule.priority(
+                        op, op.getWorkCenter(), situation.getSystemState()));
+            }
+
+            // get the rank of the processing chosen by the reference rule.
+            int rank = 1;
+            for (int j = 0; j < queue.size(); j++) {
+                if (queue.get(j).priorTo(queue.get(refIdx))) {
+                    rank ++;
+                }
+            }
+            charList[i] = rank;
+        }
+        return charList;
+    }
+
+    void calcReferenceIndexes() {
+        for (int i = 0; i < decisionSituations.size(); i++) {
+            RoutingDecisionSituation situation = decisionSituations.get(i);
+            OperationOption op = referenceRule.nextOperationOption(situation);
+            int index = situation.getQueue().indexOf(op);
+            referenceIndexes[i] = index;
+        }
+    }
+
+    public static PhenoCharacterisation defaultPhenoCharacterisation() {
+        AbstractRule defaultSequencingRule = new WSPT(RuleType.SEQUENCING);
+        AbstractRule defaultRoutingRule = new WIQ(RuleType.ROUTING);
+        int minQueueLength = 8;
+        int numDecisionSituations = 20;
+        long shuffleSeed = 8295342;
+
+        DynamicSimulation simulation = DynamicSimulation.standardFull(0, defaultSequencingRule,
+                defaultRoutingRule, 10, 500, 0,
+                0.95, 4.0);
+
+        List<RoutingDecisionSituation> situations = simulation.routingDecisionSituations(minQueueLength);
+        Collections.shuffle(situations, new Random(shuffleSeed));
+
+        situations = situations.subList(0, numDecisionSituations);
+        return new RoutingPhenoCharacterisation(defaultRoutingRule, situations);
+    }
+
+    public static PhenoCharacterisation defaultPhenoCharacterisation(String filePath) {
+        AbstractRule defaultSequencingRule = new WSPT(RuleType.SEQUENCING);
+        AbstractRule defaultRoutingRule = new WIQ(RuleType.ROUTING);
+        FlexibleStaticInstance flexibleStaticInstance = FlexibleStaticInstance.readFromAbsPath(filePath);
+        StaticSimulation simulation = new StaticSimulation(defaultSequencingRule, defaultRoutingRule,
+                flexibleStaticInstance);
+
+        int minQueueLength = 8;
+        int numDecisionSituations = 20;
+        long shuffleSeed = 8295342;
+
+        List<RoutingDecisionSituation> situations = simulation.routingDecisionSituations(minQueueLength);
+        while (situations.size() < numDecisionSituations && minQueueLength > 2) {
+            minQueueLength--;
+            situations = simulation.routingDecisionSituations(minQueueLength);
         }
 
-        return Math.sqrt(distance);
+        if (minQueueLength == 2 && situations.size() < 20) {
+            //no point going to queue length of 1, as this will only have 1 outcome
+            System.out.println("Routing pheno characterisation with only "+situations.size() +" instances.");
+        }
+
+        Collections.shuffle(situations, new Random(shuffleSeed));
+
+        situations = situations.subList(0, numDecisionSituations);
+        return new RoutingPhenoCharacterisation(defaultRoutingRule, situations);
     }
+
+    public List<RoutingDecisionSituation> getDecisionSituations() {
+        return decisionSituations;
+    }
+
+    public int[] getReferenceIndexes() {
+        return referenceIndexes;
+    }
+
 }

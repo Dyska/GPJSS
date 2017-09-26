@@ -20,18 +20,27 @@ public class Clearing {
 
     public static void clearPopulation(final EvolutionState state,
                                        double radius, int capacity,
-                                       PhenoCharacterisation pc) {
-        for (Subpopulation subpop : state.population.subpops) {
+                                       PhenoCharacterisation[] pc) {
+        RuleType[] ruleTypes = {RuleType.SEQUENCING, RuleType.ROUTING};
+        for (int subpopNum = 0; subpopNum < state.population.subpops.length; ++subpopNum) {
+            Subpopulation subpop = state.population.subpops[subpopNum];
+            RuleType ruleType = ruleTypes[subpopNum];
+            PhenoCharacterisation phenoCharacterisation = pc[subpopNum];
+
             // sort the individuals from best to worst
             Individual[] sortedPop = subpop.individuals;
             Arrays.sort(sortedPop);
 
-            pc.setReferenceRule(new GPRule(RuleType.SEQUENCING,((GPIndividual)sortedPop[0]).trees[0]));
+            //We are setting the reference rule of the phenotype to the rule of the individual
+            //with the best fitness of this subpop
+            phenoCharacterisation.setReferenceRule(new GPRule(ruleType,((GPIndividual)sortedPop[0]).trees[0]));
 
             List<int[]> sortedPopCharLists = new ArrayList<>();
             for (Individual indi : sortedPop) {
-                int[] charList = pc.characterise(new GPRule(RuleType.SEQUENCING,((GPIndividual)indi).trees[0]));
-
+                //here we are comparing the different ways each rule ranked objects in the decision making
+                //compared to the (best) reference rule of the phenotype characterisation
+                int[] charList = phenoCharacterisation.characterise(
+                        new GPRule(ruleType,((GPIndividual)indi).trees[0]));
                 sortedPopCharLists.add(charList);
             }
 

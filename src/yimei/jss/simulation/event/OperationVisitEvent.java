@@ -2,6 +2,7 @@ package yimei.jss.simulation.event;
 
 import yimei.jss.jobshop.*;
 import yimei.jss.jobshop.Process;
+import yimei.jss.simulation.RoutingDecisionSituation;
 import yimei.jss.simulation.SequencingDecisionSituation;
 import yimei.jss.simulation.DynamicSimulation;
 import yimei.jss.simulation.Simulation;
@@ -41,9 +42,16 @@ public class OperationVisitEvent extends AbstractEvent {
     }
 
     @Override
-    public void addDecisionSituation(DynamicSimulation simulation,
+    public void addSequencingDecisionSituation(Simulation simulation,
                                      List<SequencingDecisionSituation> situations,
                                      int minQueueLength) {
+        trigger(simulation);
+    }
+
+    @Override
+    public void addRoutingDecisionSituation(Simulation simulation,
+                                               List<RoutingDecisionSituation> situations,
+                                               int minQueueLength) {
         trigger(simulation);
     }
 

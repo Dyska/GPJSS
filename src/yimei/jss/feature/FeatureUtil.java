@@ -1,11 +1,15 @@
 package yimei.jss.feature;
 
 import ec.EvolutionState;
+import ec.Fitness;
 import ec.Individual;
 import ec.gp.GPIndividual;
 import ec.gp.GPNode;
 import ec.gp.GPTree;
 import ec.gp.koza.KozaFitness;
+import ec.multiobjective.MultiObjectiveFitness;
+import ec.rule.Rule;
+import ec.util.Parameter;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import yimei.jss.feature.ignore.Ignorer;
 import yimei.jss.gp.GPNodeComparator;
@@ -18,6 +22,7 @@ import yimei.jss.niching.PhenoCharacterisation;
 import yimei.jss.rule.RuleType;
 import yimei.jss.rule.operation.evolved.GPRule;
 import yimei.jss.ruleoptimisation.RuleOptimizationProblem;
+import yimei.jss.simulation.state.SystemState;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -31,6 +36,7 @@ import java.util.*;
  * Created by YiMei on 5/10/16.
  */
 public class FeatureUtil {
+    public static RuleType[] ruleTypes = {RuleType.SEQUENCING, RuleType.ROUTING};
 
     /**
      * Select a diverse set of individuals from the current population.
@@ -40,12 +46,15 @@ public class FeatureUtil {
      * @return the selected diverse set of individuals.
      */
     public static List<GPIndividual> selectDiverseIndis(EvolutionState state, Individual[] archive,
-                                                        int n) {
+                                                        int subPopNum, int n) {
+        String outputPath = initPath(state);
+
         Arrays.sort(archive);
 
         ClearingEvaluator clearingEvaluator = (ClearingEvaluator) state.evaluator;
-        PhenoCharacterisation pc = clearingEvaluator.getPhenoCharacterisation();
-        pc.setReferenceRule(new GPRule(RuleType.SEQUENCING,((GPIndividual)archive[0]).trees[0]));
+        RuleType ruleType = ruleTypes[subPopNum];
+        PhenoCharacterisation pc = clearingEvaluator.getPhenoCharacterisation()[subPopNum];
+        pc.setReferenceRule(new GPRule(ruleType,((GPIndividual)archive[0]).trees[0]));
 
         List<GPIndividual> selIndis = new ArrayList<>();
         List<int[]> selIndiCharLists = new ArrayList<>();
@@ -53,9 +62,9 @@ public class FeatureUtil {
         for (Individual indi : archive) {
             boolean tooClose = false;
 
-            GPIndividual gpIndi = (GPIndividual)indi;
+            GPIndividual gpIndi = (GPIndividual) indi;
 
-            int[] charList = pc.characterise(new GPRule(RuleType.SEQUENCING,gpIndi.trees[0]));
+            int[] charList = pc.characterise(new GPRule(ruleType,gpIndi.trees[0]));
 
             for (int i = 0; i < selIndis.size(); i++) {
                 double distance = PhenoCharacterisation.distance(charList, selIndiCharLists.get(i));
@@ -116,14 +125,15 @@ public class FeatureUtil {
      */
     public static double contribution(EvolutionState state,
                                       GPIndividual indi,
-                                      GPNode feature) {
+                                      GPNode feature,
+                                      RuleType ruleType) {
         RuleOptimizationProblem problem =
                 (RuleOptimizationProblem)state.evaluator.p_problem;
         Ignorer ignorer = ((FeatureIgnorable)state).getIgnorer();
 
-        KozaFitness fit1 = (KozaFitness)indi.fitness;
-        KozaFitness fit2 = (KozaFitness)fit1.clone();
-        GPRule rule = new GPRule(RuleType.SEQUENCING,(GPTree)indi.trees[0].clone());
+        MultiObjectiveFitness fit1 = (MultiObjectiveFitness) indi.fitness;
+        MultiObjectiveFitness fit2 = (MultiObjectiveFitness) fit1.clone();
+        GPRule rule = new GPRule(ruleType,(GPTree)indi.trees[0].clone());
         rule.ignore(feature, ignorer);
         List fitnesses = new ArrayList();
         List rules = new ArrayList();
@@ -132,7 +142,7 @@ public class FeatureUtil {
 
         problem.getEvaluationModel().evaluate(fitnesses, rules, state);
 
-        return fit2.standardizedFitness() - fit1.standardizedFitness();
+        return fit2.fitness() - fit1.fitness();
     }
 
     /**
@@ -145,6 +155,7 @@ public class FeatureUtil {
      */
     public static List<GPNode> featureSelection(EvolutionState state,
                                                 List<GPIndividual> selIndis,
+                                                RuleType ruleType,
                                                 double fitUB, double fitLB) {
         DescriptiveStatistics votingWeightStat = new DescriptiveStatistics();
 
@@ -174,7 +185,7 @@ public class FeatureUtil {
             GPIndividual selIndi = selIndis.get(s);
 
             for (int i = 0; i < terminals.size(); i++) {
-                double c = contribution(state, selIndi, terminals.get(i));
+                double c = contribution(state, selIndi, terminals.get(i), ruleType);
                 featureContributionStats.get(i).addValue(c);
 
                 if (c > 0.001) {
@@ -187,7 +198,9 @@ public class FeatureUtil {
         }
 
         long jobSeed = ((GPRuleEvolutionState)state).getJobSeed();
-        File featureInfoFile = new File("job." + jobSeed + ".fsinfo.csv");
+        String outputPath = initPath(state);
+        File featureInfoFile = new File(outputPath + "job." + jobSeed +
+                " - "+ ruleType.name() + ".fsinfo.csv");
 
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(featureInfoFile));
@@ -222,7 +235,8 @@ public class FeatureUtil {
             }
         }
 
-        File fsFile = new File("job." + jobSeed + ".terminals.csv");
+        File fsFile = new File(outputPath + "job." + jobSeed + " - "
+                + ruleType.name() + ".terminals.csv");
 
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(fsFile));
@@ -251,6 +265,7 @@ public class FeatureUtil {
      */
     public static List<GPNode> featureConstruction(EvolutionState state,
                                                    List<GPIndividual> selIndis,
+                                                   RuleType ruleType,
                                                    double fitUB, double fitLB) {
         List<GPNode> BBs = buildingBlocks(selIndis, 2);
 
@@ -280,7 +295,7 @@ public class FeatureUtil {
             GPIndividual selIndi = selIndis.get(s);
 
             for (int i = 0; i < BBs.size(); i++) {
-                double c = contribution(state, selIndi, BBs.get(i));
+                double c = contribution(state, selIndi, BBs.get(i), ruleType);
                 BBContributionStats.get(i).addValue(c);
 
                 if (c > 0.001) {
@@ -293,7 +308,9 @@ public class FeatureUtil {
         }
 
         long jobSeed = ((GPRuleEvolutionState)state).getJobSeed();
-        File BBInfoFile = new File("job." + jobSeed + ".fcinfo.csv");
+        String outputPath = initPath(state);
+        File BBInfoFile = new File(outputPath + "job." + jobSeed +
+                " - "+ ruleType.name() + ".fcinfo.csv");
 
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(BBInfoFile));
@@ -329,7 +346,7 @@ public class FeatureUtil {
             }
         }
 
-        File fcFile = new File("job." + jobSeed + ".bbs.csv");
+        File fcFile = new File(outputPath + "job." + jobSeed + " - "+ ruleType.name() + ".bbs.csv");
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(fcFile));
 
@@ -462,5 +479,21 @@ public class FeatureUtil {
                 adaptTree(child, terminals);
             }
         }
+    }
+
+    private static String initPath(EvolutionState state) {
+        String outputPath = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/out/terminals/";
+        if (state.population.subpops.length == 2) {
+            outputPath += "coevolution/";
+        } else {
+            outputPath += "simple/";
+        }
+        String filePath = state.parameters.getString(new Parameter("filePath"), null);
+        if (filePath == null) {
+            outputPath += "dynamic/";
+        } else {
+            outputPath += "static/";
+        }
+        return outputPath;
     }
 }

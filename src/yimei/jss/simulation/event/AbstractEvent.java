@@ -1,5 +1,6 @@
 package yimei.jss.simulation.event;
 
+import yimei.jss.simulation.RoutingDecisionSituation;
 import yimei.jss.simulation.SequencingDecisionSituation;
 import yimei.jss.simulation.DynamicSimulation;
 import yimei.jss.simulation.Simulation;
@@ -23,8 +24,12 @@ public abstract class AbstractEvent implements Comparable<AbstractEvent> {
 
     public abstract void trigger(Simulation simulation);
 
-    public abstract void addDecisionSituation(DynamicSimulation simulation,
+    public abstract void addSequencingDecisionSituation(Simulation simulation,
                                               List<SequencingDecisionSituation> situations,
+                                              int minQueueLength);
+
+    public abstract void addRoutingDecisionSituation(Simulation simulation,
+                                              List<RoutingDecisionSituation> situations,
                                               int minQueueLength);
 
     @Override

@@ -1,10 +1,13 @@
 package yimei.jss.algorithm.featureselection;
 
 import ec.EvolutionState;
+import ec.Individual;
 import ec.gp.GPIndividual;
 import ec.gp.GPNode;
+import ec.rule.Rule;
 import ec.util.Checkpoint;
 import ec.util.Parameter;
+import yimei.jss.rule.RuleType;
 import yimei.jss.surrogate.Surrogate;
 import yimei.jss.feature.FeatureIgnorable;
 import yimei.jss.feature.FeatureUtil;
@@ -25,11 +28,13 @@ public class FSGPRuleEvolutionState extends GPRuleEvolutionState implements Term
     public static final String P_PRE_GENERATIONS = "pre-generations";
     public static final String P_POP_ADAPT_FRAC_ELITES = "pop-adapt-frac-elites";
     public static final String P_POP_ADAPT_FRAC_ADAPTED = "pop-adapt-frac-adapted";
+    public static final String P_DO_ADAPT = "feature-selection-adapt-population";
 
     private Ignorer ignorer;
     private int preGenerations;
     private double fracElites;
     private double fracAdapted;
+    private boolean doAdapt;
 
     private double fitUB = Double.NEGATIVE_INFINITY;
     private double fitLB = Double.POSITIVE_INFINITY;
@@ -56,6 +61,8 @@ public class FSGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 new Parameter(P_POP_ADAPT_FRAC_ELITES), null, 0.0);
         fracAdapted = state.parameters.getDoubleWithDefault(
                 new Parameter(P_POP_ADAPT_FRAC_ADAPTED), null, 1.0);
+        doAdapt = state.parameters.getBoolean(new Parameter(P_DO_ADAPT),
+                null, true);
     }
 
     @Override
@@ -66,22 +73,29 @@ public class FSGPRuleEvolutionState extends GPRuleEvolutionState implements Term
         if (generation == preGenerations) {
             evaluator.evaluatePopulation(this);
 
-            List<GPIndividual> selIndis =
-                    FeatureUtil.selectDiverseIndis(this, population.subpops[0].individuals, 30);
+            for (int i = 0; i < population.subpops.length; ++i) {
+                Individual[] individuals = population.subpops[i].individuals;
 
-            fitUB = selIndis.get(0).fitness.fitness();
-            fitLB = 1 - fitUB;
+                List<GPIndividual> selIndis =
+                        FeatureUtil.selectDiverseIndis(this, individuals, i, 30);
 
-            List<GPNode> selFeatures =
-                    FeatureUtil.featureSelection(this, selIndis, fitUB, fitLB);
+                fitUB = selIndis.get(0).fitness.fitness();
+                fitLB = 1 - fitUB;
 
-            setTerminals(selFeatures);
+                List<GPNode> selFeatures =
+                        FeatureUtil.featureSelection(this, selIndis,
+                                FeatureUtil.ruleTypes[i], fitUB, fitLB);
 
-            adaptPopulation();
+                if (doAdapt) {
+                    setTerminals(selFeatures);
 
-            ((ClearingEvaluator)evaluator).setClear(false);
-            ((Surrogate)((RuleOptimizationProblem)evaluator.p_problem)
-                    .getEvaluationModel()).useOriginal();
+                    adaptPopulation();
+
+                    ((ClearingEvaluator)evaluator).setClear(false);
+                    ((Surrogate)((RuleOptimizationProblem)evaluator.p_problem)
+                            .getEvaluationModel()).useOriginal();
+                }
+            }
         }
 
         // EVALUATION
@@ -140,7 +154,7 @@ public class FSGPRuleEvolutionState extends GPRuleEvolutionState implements Term
         statistics.postPostBreedingExchangeStatistics(this);
 
         // Generate new instances if needed
-        RuleOptimizationProblem problem = (RuleOptimizationProblem)evaluator.p_problem;
+        RuleOptimizationProblem problem = (RuleOptimizationProblem) evaluator.p_problem;
         if (problem.getEvaluationModel().isRotatable()) {
             problem.rotateEvaluationModel();
         }

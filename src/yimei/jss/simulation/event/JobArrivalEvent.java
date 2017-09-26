@@ -43,10 +43,31 @@ public class JobArrivalEvent extends AbstractEvent {
     }
 
     @Override
-    public void addDecisionSituation(DynamicSimulation simulation,
+    public void addSequencingDecisionSituation(Simulation simulation,
                                      List<SequencingDecisionSituation> situations,
                                      int minQueueLength) {
         trigger(simulation);
+    }
+
+    @Override
+    public void addRoutingDecisionSituation(Simulation simulation,
+                                               List<RoutingDecisionSituation> situations,
+                                               int minQueueLength) {
+        //Job has just arrived, get first operation out
+        Operation operation = job.getOperation(0);
+        RoutingDecisionSituation decisionSituation = new RoutingDecisionSituation(
+                operation.getOperationOptions(), simulation.getSystemState());
+
+        if (operation.getOperationOptions().size() >= minQueueLength) {
+            situations.add(decisionSituation.clone());
+        }
+
+        OperationOption operationOption =
+                simulation.getRoutingRule().nextOperationOption(decisionSituation);
+        operationOption.setReadyTime(job.getReleaseTime());
+
+        simulation.addEvent(new OperationVisitEvent(job.getReleaseTime(), operationOption));
+        simulation.generateJob();
     }
 
     @Override
