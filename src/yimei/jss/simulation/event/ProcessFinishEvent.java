@@ -106,8 +106,48 @@ public class ProcessFinishEvent extends AbstractEvent {
     @Override
     public void addRoutingDecisionSituation(Simulation simulation,
                                                List<RoutingDecisionSituation> situations,
-                                               int minQueueLength) {
-        trigger(simulation);
+                                               int minOptions) {
+        WorkCenter workCenter = process.getWorkCenter();
+        process.getOperationOption().getJob().addProcessFinishEvent(this);
+
+        if (!workCenter.getQueue().isEmpty()) {
+            SequencingDecisionSituation sequencingDecisionSituation =
+                    new SequencingDecisionSituation(workCenter.getQueue(), workCenter,
+                            simulation.getSystemState());
+
+            OperationOption dispatchedOp =
+                    simulation.getSequencingRule().priorOperation(sequencingDecisionSituation);
+
+            workCenter.removeFromQueue(dispatchedOp);
+
+            //must wait for machine to be ready
+            double processStartTime = Math.max(workCenter.getReadyTime(), time);
+
+            Process nextP = new Process(workCenter, process.getMachineId(),
+                    dispatchedOp, processStartTime);
+            simulation.addEvent(new ProcessStartEvent(nextP));
+        }
+
+        if (process.getOperationOption().getOperation().getNext() != null) {
+            if (process.getOperationOption().getOperation().getNext().getOperationOptions().size()
+                    >= minOptions) {
+                Operation o = process.getOperationOption().getOperation();
+                RoutingDecisionSituation r = o.getNext().routingDecisionSituation(simulation.getSystemState());
+                situations.add(r.clone());
+            }
+        }
+
+        OperationOption nextOp = process.getOperationOption().getNext(simulation.getSystemState(),
+                simulation.getRoutingRule());
+
+        if (nextOp == null) {
+            Job job = process.getOperationOption().getJob();
+            job.setCompletionTime(process.getFinishTime());
+            simulation.completeJob(job);
+        }
+        else {
+            simulation.addEvent(new OperationVisitEvent(time, nextOp));
+        }
     }
 
 

@@ -245,12 +245,14 @@ class RoutingPhenoCharacterisation extends PhenoCharacterisation {
             situations = simulation.routingDecisionSituations(minQueueLength);
         }
 
-        if (minQueueLength == 2 && situations.size() < 20) {
+        if (minQueueLength == 2 && situations.size() < numDecisionSituations) {
             //no point going to queue length of 1, as this will only have 1 outcome
-            System.out.println("Routing pheno characterisation with only "+situations.size() +" instances.");
+            System.out.println("Only "+situations.size() +" instances available for routing pheno characterisation.");
+            numDecisionSituations = situations.size();
         }
 
         Collections.shuffle(situations, new Random(shuffleSeed));
+
 
         situations = situations.subList(0, numDecisionSituations);
         return new RoutingPhenoCharacterisation(defaultRoutingRule, situations);

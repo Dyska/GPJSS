@@ -82,12 +82,16 @@ public class Operation {
     }
 
     public OperationOption chooseOperationOption(SystemState systemState, AbstractRule routingRule) {
+        RoutingDecisionSituation decisionSituation = routingDecisionSituation(systemState);
+
         if (routingRule == null) {
             routingRule = new WIQ(RuleType.ROUTING);
         }
-        RoutingDecisionSituation decisionSituation = new RoutingDecisionSituation(
-                operationOptions,systemState);
         return routingRule.nextOperationOption(decisionSituation);
+    }
+
+    public RoutingDecisionSituation routingDecisionSituation(SystemState systemState) {
+        return new RoutingDecisionSituation(operationOptions,systemState);
     }
 
     @Override

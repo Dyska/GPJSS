@@ -5,7 +5,7 @@ parent.0 = ecsuite.params
 # ==============================
 
 state =                                 yimei.jss.algorithm.featureselection.FSGPRuleEvolutionState
-eval =                                  yimei.jss.niching.ClearingEvaluator
+eval =                                  yimei.jss.niching.MultiPopCoevolutionaryClearingEvaluator
 eval.problem =                          yimei.jss.ruleoptimisation.RuleCoevolutionProblem
 eval.problem.data =                     yimei.jss.gp.data.DoubleData
 eval.problem.type =                     rosenbrock
@@ -217,7 +217,7 @@ gp.fs.0.func.6.nc =                     nc2
 #pop.subpop.0.species.ind.tree.0.c-operators = false
 #gp.tree.print-style =                  dot
 
-pre-generations =                       50
+pre-generations =                       99
 pop-adapt-frac-elites =                 0
 pop-adapt-frac-adapted =                0.1
 feature-selection-adapt-population =    false

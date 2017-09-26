@@ -30,7 +30,7 @@ public abstract class AbstractEvent implements Comparable<AbstractEvent> {
 
     public abstract void addRoutingDecisionSituation(Simulation simulation,
                                               List<RoutingDecisionSituation> situations,
-                                              int minQueueLength);
+                                              int minOptions);
 
     @Override
     public int compareTo(AbstractEvent other) {

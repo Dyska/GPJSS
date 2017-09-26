@@ -3,12 +3,11 @@ package yimei.jss.feature;
 import ec.EvolutionState;
 import ec.Fitness;
 import ec.Individual;
+import ec.app.tutorial4.Mul;
 import ec.gp.GPIndividual;
 import ec.gp.GPNode;
 import ec.gp.GPTree;
-import ec.gp.koza.KozaFitness;
 import ec.multiobjective.MultiObjectiveFitness;
-import ec.rule.Rule;
 import ec.util.Parameter;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import yimei.jss.feature.ignore.Ignorer;
@@ -18,11 +17,11 @@ import yimei.jss.gp.TerminalsChangable;
 import yimei.jss.gp.terminal.BuildingBlock;
 import yimei.jss.gp.terminal.ConstantTerminal;
 import yimei.jss.niching.ClearingEvaluator;
+import yimei.jss.niching.MultiPopCoevolutionaryClearingEvaluator;
 import yimei.jss.niching.PhenoCharacterisation;
 import yimei.jss.rule.RuleType;
 import yimei.jss.rule.operation.evolved.GPRule;
 import yimei.jss.ruleoptimisation.RuleOptimizationProblem;
-import yimei.jss.simulation.state.SystemState;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -47,13 +46,20 @@ public class FeatureUtil {
      */
     public static List<GPIndividual> selectDiverseIndis(EvolutionState state, Individual[] archive,
                                                         int subPopNum, int n) {
-        String outputPath = initPath(state);
-
         Arrays.sort(archive);
 
-        ClearingEvaluator clearingEvaluator = (ClearingEvaluator) state.evaluator;
+        PhenoCharacterisation pc = null;
+        double radius = 0;
+        if (state.evaluator instanceof ClearingEvaluator) {
+            ClearingEvaluator clearingEvaluator = (ClearingEvaluator) state.evaluator;
+            pc = clearingEvaluator.getPhenoCharacterisation()[subPopNum];
+            radius = clearingEvaluator.getRadius();
+        } else if (state.evaluator instanceof MultiPopCoevolutionaryClearingEvaluator) {
+            MultiPopCoevolutionaryClearingEvaluator clearingEvaluator = (MultiPopCoevolutionaryClearingEvaluator) state.evaluator;
+            pc = clearingEvaluator.getPhenoCharacterisation()[subPopNum];
+            radius = clearingEvaluator.getRadius();
+        }
         RuleType ruleType = ruleTypes[subPopNum];
-        PhenoCharacterisation pc = clearingEvaluator.getPhenoCharacterisation()[subPopNum];
         pc.setReferenceRule(new GPRule(ruleType,((GPIndividual)archive[0]).trees[0]));
 
         List<GPIndividual> selIndis = new ArrayList<>();
@@ -68,7 +74,7 @@ public class FeatureUtil {
 
             for (int i = 0; i < selIndis.size(); i++) {
                 double distance = PhenoCharacterisation.distance(charList, selIndiCharLists.get(i));
-                if (distance <= clearingEvaluator.getRadius()) {
+                if (distance <= radius) {
                     tooClose = true;
                     break;
                 }
@@ -135,12 +141,34 @@ public class FeatureUtil {
         MultiObjectiveFitness fit2 = (MultiObjectiveFitness) fit1.clone();
         GPRule rule = new GPRule(ruleType,(GPTree)indi.trees[0].clone());
         rule.ignore(feature, ignorer);
-        List fitnesses = new ArrayList();
-        List rules = new ArrayList();
-        fitnesses.add(fit2);
-        rules.add(rule);
 
-        problem.getEvaluationModel().evaluate(fitnesses, rules, state);
+        Fitness[] fitnesses = new Fitness[2];
+        GPRule[] rules = new GPRule[2];
+        int index = 0;
+        if (ruleType == RuleType.ROUTING) {
+            index = 1;
+        }
+        fitnesses[index] = fit2;
+        rules[index] = rule;
+
+        //It is important that sequencing rule is at [0] and routing rule is at [1]
+        //as the evaluation model is expecting this
+
+        //also need to get context of other rule to compare
+        RuleType otherRuleType = RuleType.SEQUENCING;
+        int contextIndex = 0;
+        if (ruleType == RuleType.SEQUENCING) {
+            otherRuleType = RuleType.ROUTING;
+            contextIndex = 1;
+        }
+        GPIndividual contextIndi = (GPIndividual) fit2.context[contextIndex];
+        MultiObjectiveFitness contextFitness = (MultiObjectiveFitness) contextIndi.fitness.clone();
+        GPRule contextRule = new GPRule(otherRuleType,
+                (GPTree) (contextIndi).trees[0].clone());
+        fitnesses[contextIndex] = contextFitness;
+        rules[contextIndex] = contextRule;
+
+        problem.getEvaluationModel().evaluate(Arrays.asList(fitnesses), Arrays.asList(rules), state);
 
         return fit2.fitness() - fit1.fitness();
     }

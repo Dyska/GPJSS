@@ -136,6 +136,8 @@ public class MultipleRuleEvaluationModel extends AbstractEvaluationModel{
                          EvolutionState state) {
         //expecting 2 rules here - one routing rule and one sequencing rule
         if (rules.size() != currentFitnesses.size() || rules.size() != 2) {
+            System.out.println("Rule evaluation failed!");
+            System.out.println("Expecting 2 rules, only 1 found.");
             return;
         }
 

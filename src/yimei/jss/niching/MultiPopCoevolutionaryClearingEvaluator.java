@@ -1,17 +1,13 @@
 package yimei.jss.niching;
 
 import ec.EvolutionState;
-import ec.simple.SimpleEvaluator;
+import ec.coevolve.MultiPopCoevolutionaryEvaluator;
 import ec.util.Parameter;
 
 /**
- * The evaluator with population clearing.
- * The evaluator is used for niching.
- *
- * Created by YiMei on 3/10/16.
+ * Created by dyska on 26/09/17.
  */
-public class ClearingEvaluator extends SimpleEvaluator {
-
+public class MultiPopCoevolutionaryClearingEvaluator extends MultiPopCoevolutionaryEvaluator {
     public static final String P_RADIUS = "radius";
     public static final String P_CAPACITY = "capacity";
 
