@@ -80,14 +80,14 @@ public class FSGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 fitUB = selIndis.get(0).fitness.fitness();
                 fitLB = 1 - fitUB;
 
-                List<GPNode> selFeatures =
+                GPNode[] selFeatures =
                         FeatureUtil.featureSelection(this, selIndis,
                                 FeatureUtil.ruleTypes[i], fitUB, fitLB);
 
                 if (doAdapt) {
-                    setTerminals(selFeatures);
+                    setTerminals(selFeatures,i);
 
-                    adaptPopulation();
+                    adaptPopulation(i);
 
                     ((ClearingEvaluator)evaluator).setClear(false);
                     ((Surrogate)((RuleOptimizationProblem)evaluator.p_problem)
@@ -171,7 +171,7 @@ public class FSGPRuleEvolutionState extends GPRuleEvolutionState implements Term
     }
 
     @Override
-    public void adaptPopulation() {
-        FeatureUtil.adaptPopulationThreeParts(this, fracElites, fracAdapted);
+    public void adaptPopulation(int subPopNum) {
+        FeatureUtil.adaptPopulationThreeParts(this, fracElites, fracAdapted, subPopNum);
     }
 }

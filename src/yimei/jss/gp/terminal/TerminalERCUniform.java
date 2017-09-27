@@ -17,12 +17,16 @@ public class TerminalERCUniform extends TerminalERC {
     public void setup(final EvolutionState state, final Parameter base) {
         super.setup(state, base);
 
-        terminal = ((GPRuleEvolutionState)state).pickTerminalRandom();
+        //Assume here we are dealing with simple gp
+        int subPopNum = 0;
+        terminal = ((GPRuleEvolutionState)state).pickTerminalRandom(subPopNum);
     }
 
     @Override
     public void resetNode(EvolutionState state, int thread) {
-        terminal = ((GPRuleEvolutionState)state).pickTerminalRandom();
+        //Assume here we are dealing with simple gp
+        int subPopNum = 0;
+        terminal = ((GPRuleEvolutionState)state).pickTerminalRandom(subPopNum);
 
         if (terminal instanceof ERC) {
             ERC ercTerminal = new DoubleERC();

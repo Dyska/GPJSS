@@ -150,11 +150,11 @@ public class FeatureUtil {
         if (ruleType == RuleType.ROUTING) {
             index = 1;
         }
-        fitnesses[index] = fit2;
-        rules[index] = rule;
 
         //It is important that sequencing rule is at [0] and routing rule is at [1]
-        //as the evaluation model is expecting this
+        //as the CCGP evaluation model is expecting this
+        fitnesses[index] = fit2;
+        rules[index] = rule;
 
         if (numSubPops == 2) {
             //also need to get context of other rule to compare
@@ -186,7 +186,7 @@ public class FeatureUtil {
      * @param fitLB the lower bound of individual fitness.
      * @return the set of selected features.
      */
-    public static List<GPNode> featureSelection(EvolutionState state,
+    public static GPNode[] featureSelection(EvolutionState state,
                                                 List<GPIndividual> selIndis,
                                                 RuleType ruleType,
                                                 double fitUB, double fitLB) {
@@ -207,9 +207,14 @@ public class FeatureUtil {
         List<DescriptiveStatistics> featureContributionStats = new ArrayList<>();
         List<DescriptiveStatistics> featureVotingWeightStats = new ArrayList<>();
 
-        List<GPNode> terminals = ((TerminalsChangable)state).getTerminals();
+        int subPopNum = 0;
+        if (ruleType == RuleType.ROUTING) {
+            subPopNum = 1;
+        }
 
-        for (int i = 0; i < terminals.size(); i++) {
+        GPNode[] terminals = ((TerminalsChangable)state).getTerminals(subPopNum);
+
+        for (int i = 0; i < terminals.length; i++) {
             featureContributionStats.add(new DescriptiveStatistics());
             featureVotingWeightStats.add(new DescriptiveStatistics());
         }
@@ -217,8 +222,8 @@ public class FeatureUtil {
         for (int s = 0; s < selIndis.size(); s++) {
             GPIndividual selIndi = selIndis.get(s);
 
-            for (int i = 0; i < terminals.size(); i++) {
-                double c = contribution(state, selIndi, terminals.get(i), ruleType);
+            for (int i = 0; i < terminals.length; i++) {
+                double c = contribution(state, selIndi, terminals[i], ruleType);
                 featureContributionStats.get(i).addValue(c);
 
                 if (c > 0.001) {
@@ -240,9 +245,9 @@ public class FeatureUtil {
             writer.write("Feature,Fitness,Contribution,VotingWeights,NormFit,Size");
             writer.newLine();
 
-            for (int i = 0; i < terminals.size(); i++) {
+            for (int i = 0; i < terminals.length; i++) {
                 for (int j = 0; j < selIndis.size(); j++) {
-                    writer.write(terminals.get(i).toString() + "," +
+                    writer.write(terminals[i].toString() + "," +
                             selIndis.get(j).fitness.fitness() + "," +
                             featureContributionStats.get(i).getElement(j) + "," +
                             featureVotingWeightStats.get(i).getElement(j) + "," +
@@ -259,12 +264,12 @@ public class FeatureUtil {
 
         List<GPNode> selFeatures = new LinkedList<>();
 
-        for (int i = 0; i < terminals.size(); i++) {
+        for (int i = 0; i < terminals.length; i++) {
             double votingWeight = featureVotingWeightStats.get(i).getSum();
 
             // majority voting
             if (votingWeight > 0.5 * totalVotingWeight) {
-                selFeatures.add(terminals.get(i));
+                selFeatures.add(terminals[i]);
             }
         }
 
@@ -284,7 +289,7 @@ public class FeatureUtil {
             e.printStackTrace();
         }
 
-        return selFeatures;
+        return (GPNode[]) selFeatures.toArray();
     }
 
     /**
@@ -450,8 +455,9 @@ public class FeatureUtil {
      */
     public static void adaptPopulationThreeParts(EvolutionState state,
                                                  double fracElites,
-                                                 double fracAdapted) {
-        List<GPNode> terminals = ((TerminalsChangable)state).getTerminals();
+                                                 double fracAdapted,
+                                                 int subPopNum) {
+        GPNode[] terminals = ((TerminalsChangable)state).getTerminals(subPopNum);
 
         Individual[] newPop = state.population.subpops[0].individuals;
         int numElites = (int)(fracElites * newPop.length);
@@ -484,7 +490,7 @@ public class FeatureUtil {
      * @param tree the tree.
      * @param terminals the new terminal set.
      */
-    private static void adaptTree(GPNode tree, List<GPNode> terminals) {
+    private static void adaptTree(GPNode tree, GPNode[] terminals) {
         if (tree.children.length == 0) {
             // It's a terminal
             boolean selected = false;

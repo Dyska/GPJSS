@@ -143,7 +143,7 @@ class SequencingPhenoCharacterisation extends PhenoCharacterisation {
 
         if (minQueueLength == 2 && situations.size() < 20) {
             //no point going to queue length of 1, as this will only have 1 outcome
-            System.out.println("Sequencing pheno characterisation with only "+situations.size() +" instances.");
+            System.out.println("Only "+situations.size() +" instances available for sequencing pheno characterisation.");
             numDecisionSituations = situations.size();
         }
 

@@ -29,60 +29,84 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
 	public final static String P_TERMINALS_FROM = "terminals-from";
 	public final static String P_INCLUDE_ERC = "include-erc";
 
-	protected String terminalFrom;
-	protected boolean includeErc;
+	protected String[] terminalsFrom;
+	protected boolean[] includeErc;
 	protected long jobSeed;
-	protected List<GPNode> terminals;
+	protected GPNode[][] terminals;
 
 	List<Double> genTimes = new ArrayList<>();
 
-	public List<GPNode> getTerminals() {
+	public GPNode[][] getTerminals() {
 		return terminals;
 	}
 
-	public long getJobSeed() {
+    public GPNode[] getTerminals(int subPopNum) {
+        return terminals[subPopNum];
+    }
+
+    public long getJobSeed() {
 		return jobSeed;
 	}
 
-	public void setTerminals(List<GPNode> terminals) {
+	public void setTerminals(GPNode[][] terminals) {
 		this.terminals = terminals;
 	}
 
-	/**
+    public void setTerminals(GPNode[] terminals, int subPopNum) {
+        this.terminals[subPopNum] = terminals;
+    }
+
+
+    /**
 	 * Initialize the terminal set with all the job shop attributes.
 	 */
 	public void initTerminalSet() {
-		if (terminalFrom.equals("basic")) {
-			initBasicTerminalSet();
-		}
-		else if (terminalFrom.equals("relative")) {
-			initRelativeTerminalSet();
-		}
-		else {
-			String terminalFile = "terminals/" + terminalFrom;
-			initTerminalSetFromCsv(new File(terminalFile));
-		}
+        int numSubPops = parameters.getInt(new Parameter("pop.subpops"),null);
+        this.terminals = new GPNode[numSubPops][];
 
-		if (includeErc)
-			terminals.add(new DoubleERC());
+        for (int subPopNum = 0; subPopNum < numSubPops; ++subPopNum) {
+            String terminalFrom = terminalsFrom[subPopNum];
+            boolean includeErc = this.includeErc[subPopNum];
+            if (terminalFrom.equals("basic")) {
+                initBasicTerminalSet(subPopNum);
+            }
+            else if (terminalFrom.equals("relative")) {
+                initRelativeTerminalSet(subPopNum);
+            }
+            else {
+                String terminalFile = "terminals/" + terminalFrom;
+                initTerminalSetFromCsv(new File(terminalFile), subPopNum);
+            }
+
+            if (includeErc) {
+                //terminals.add(new DoubleERC());
+                //TODO: Implement this
+                System.out.println("INCLUDE ERC NOT IMPLEMENTED");
+            }
+        }
 	}
 
-	public void initBasicTerminalSet() {
-		terminals = new LinkedList<>();
+	public void initBasicTerminalSet(int subPopNum) {
+		LinkedList<GPNode> terminals = new LinkedList<GPNode>();
 		for (JobShopAttribute a : JobShopAttribute.basicAttributes()) {
-			terminals.add(new AttributeGPNode(a));
+            GPNode attribute = new AttributeGPNode(a);
+            terminals.add(attribute);
 		}
+		this.terminals[subPopNum] = terminals.toArray(new GPNode[0]);
+
 	}
 
-	public void initRelativeTerminalSet() {
-		terminals = new LinkedList<>();
+	public void initRelativeTerminalSet(int subPopNum) {
+        LinkedList<GPNode> terminals = new LinkedList<GPNode>();
 		for (JobShopAttribute a : JobShopAttribute.relativeAttributes()) {
-			terminals.add(new AttributeGPNode(a));
+		    GPNode attribute = new AttributeGPNode(a);
+			terminals.add(attribute);
 		}
-	}
+        this.terminals[subPopNum] = terminals.toArray(new GPNode[0]);
+    }
 
-	public void initTerminalSetFromCsv(File csvFile) {
-		terminals = new LinkedList<GPNode>();
+	public void initTerminalSetFromCsv(File csvFile, int subPopNum) {
+        LinkedList<GPNode> terminals = new LinkedList<GPNode>();
 
 		BufferedReader br = null;
         String line = "";
@@ -91,7 +115,8 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
             br = new BufferedReader(new FileReader(csvFile));
             while ((line = br.readLine()) != null) {
             	JobShopAttribute a = JobShopAttribute.get(line);
-				terminals.add(new AttributeGPNode(a));
+                GPNode attribute = new AttributeGPNode(a);
+                terminals.add(attribute);
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -106,16 +131,18 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
                 }
             }
         }
-	}
+        this.terminals[subPopNum] = terminals.toArray(new GPNode[0]);
+    }
 
 	/**
 	 * Return the index of an attribute in the terminal set.
 	 * @param attribute the attribute.
 	 * @return the index of the attribute in the terminal set.
 	 */
-	public int indexOfAttribute(JobShopAttribute attribute) {
-		for (int i = 0; i < terminals.size(); i++) {
-			JobShopAttribute terminalAttribute = ((AttributeGPNode)terminals.get(i)).getJobShopAttribute();
+	public int indexOfAttribute(JobShopAttribute attribute, int subPopNum) {
+	    GPNode[] terminals = this.terminals[subPopNum];
+		for (int i = 0; i < terminals.length; i++) {
+			JobShopAttribute terminalAttribute = ((AttributeGPNode)terminals[i]).getJobShopAttribute();
 			if (terminalAttribute == attribute) {
 				return i;
 			}
@@ -128,16 +155,17 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
 	 * Randomly pick a terminal from the terminal set.
 	 * @return the selected terminal, which is a GPNode.
 	 */
-	public GPNode pickTerminalRandom() {
-    	int index = random[0].nextInt(terminals.size());
-    	return terminals.get(index);
+	public GPNode pickTerminalRandom(int subPopNum) {
+    	int index = random[0].nextInt(terminals[subPopNum].length);
+    	return terminals[subPopNum][index];
     }
 
 	// the best individual in subpopulation
 	public Individual bestIndi(int subpop) {
 		int best = 0;
 		for(int x = 1; x < population.subpops[subpop].individuals.length; x++)
-			if (population.subpops[subpop].individuals[x].fitness.betterThan(population.subpops[subpop].individuals[best].fitness))
+			if (population.subpops[subpop].individuals[x].fitness.betterThan(
+			        population.subpops[subpop].individuals[best].fitness))
 				best = x;
 
 		return population.subpops[subpop].individuals[best];
@@ -151,13 +179,7 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
 		p = new Parameter("seed").push(""+0);
 		jobSeed = parameters.getLongWithDefault(p, null, 0);
 
- 		p = new Parameter(P_TERMINALS_FROM);
- 		terminalFrom = parameters.getStringWithDefault(p, null, "basic");
-
-		p = new Parameter(P_INCLUDE_ERC);
-		includeErc = parameters.getBoolean(p, null, false);
-
-		initTerminalSet();
+        setupTerminals();
 
 		super.setup(this, base);
 	}
@@ -272,4 +294,54 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
 
 	    return R_NOTDONE;
 	}
+
+	private void setupTerminals() {
+        Parameter p;
+
+        //Need to know how many populations we're expecting here, as will need
+        //one terminal set per population
+        int numSubPops = parameters.getInt(new Parameter("pop.subpops"),null);
+
+        if (numSubPops == 1) {
+            p = new Parameter(P_TERMINALS_FROM);
+
+            terminalsFrom = new String[]{parameters.getStringWithDefault(p,
+                    null, "basic")};
+
+            p = new Parameter(P_INCLUDE_ERC);
+            includeErc = new boolean[]{parameters.getBoolean(p, null, false)};
+            initTerminalSet();
+        } else if (numSubPops == 2) {
+            terminalsFrom = new String[numSubPops];
+            includeErc = new boolean[numSubPops];
+            int subPopNum = 0;
+
+            p = new Parameter(P_TERMINALS_FROM + "." + subPopNum);
+            String subPop1TerminalSet = parameters.getStringWithDefault(p,
+                    null, null);
+            if (subPop1TerminalSet == null) {
+                //might have provided other value by mistake, we should check for this
+                p = new Parameter(P_TERMINALS_FROM);
+                subPop1TerminalSet = parameters.getStringWithDefault(p,
+                        null, "basic");
+                output.warning("No terminal set for subpopulation 1 specified - using "+subPop1TerminalSet+".");
+
+            }
+            terminalsFrom[subPopNum] = subPop1TerminalSet;
+
+            subPopNum++;
+            p = new Parameter(P_TERMINALS_FROM + "." + subPopNum);
+            String subPop2TerminalSet = parameters.getStringWithDefault(p,
+                    null, null);
+            if (subPop2TerminalSet == null) {
+                //use whatever we settled on for first population
+                subPop2TerminalSet = subPop1TerminalSet;
+                output.warning("No terminal set for subpopulation 2 specified - using terminal set for subpopulation 1.");
+            }
+            terminalsFrom[subPopNum] = subPop2TerminalSet;
+            //TODO: Add support for erc - will be false by default
+
+            initTerminalSet();
+        }
+    }
 }

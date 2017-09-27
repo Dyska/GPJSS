@@ -14,7 +14,8 @@ import java.util.List;
  */
 public interface TerminalsChangable {
 
-    List<GPNode> getTerminals();
-    void setTerminals(List<GPNode> terminals);
-    void adaptPopulation();
+    GPNode[][] getTerminals();
+    GPNode[] getTerminals(int subPopNum);
+    void setTerminals(GPNode[][] terminals);
+    void adaptPopulation(int subPopNum);
 }
