@@ -142,8 +142,10 @@ public class FeatureUtil {
         GPRule rule = new GPRule(ruleType,(GPTree)indi.trees[0].clone());
         rule.ignore(feature, ignorer);
 
-        Fitness[] fitnesses = new Fitness[2];
-        GPRule[] rules = new GPRule[2];
+        int numSubPops = state.population.subpops.length;
+
+        Fitness[] fitnesses = new Fitness[numSubPops];
+        GPRule[] rules = new GPRule[numSubPops];
         int index = 0;
         if (ruleType == RuleType.ROUTING) {
             index = 1;
@@ -154,19 +156,22 @@ public class FeatureUtil {
         //It is important that sequencing rule is at [0] and routing rule is at [1]
         //as the evaluation model is expecting this
 
-        //also need to get context of other rule to compare
-        RuleType otherRuleType = RuleType.SEQUENCING;
-        int contextIndex = 0;
-        if (ruleType == RuleType.SEQUENCING) {
-            otherRuleType = RuleType.ROUTING;
-            contextIndex = 1;
+        if (numSubPops == 2) {
+            //also need to get context of other rule to compare
+            RuleType otherRuleType = RuleType.SEQUENCING;
+            int contextIndex = 0;
+            if (ruleType == RuleType.SEQUENCING) {
+                otherRuleType = RuleType.ROUTING;
+                contextIndex = 1;
+            }
+
+            GPIndividual contextIndi = (GPIndividual) fit2.context[contextIndex];
+            MultiObjectiveFitness contextFitness = (MultiObjectiveFitness) contextIndi.fitness.clone();
+            GPRule contextRule = new GPRule(otherRuleType,
+                    (GPTree) (contextIndi).trees[0].clone());
+            fitnesses[contextIndex] = contextFitness;
+            rules[contextIndex] = contextRule;
         }
-        GPIndividual contextIndi = (GPIndividual) fit2.context[contextIndex];
-        MultiObjectiveFitness contextFitness = (MultiObjectiveFitness) contextIndi.fitness.clone();
-        GPRule contextRule = new GPRule(otherRuleType,
-                (GPTree) (contextIndi).trees[0].clone());
-        fitnesses[contextIndex] = contextFitness;
-        rules[contextIndex] = contextRule;
 
         problem.getEvaluationModel().evaluate(Arrays.asList(fitnesses), Arrays.asList(rules), state);
 
@@ -510,18 +515,19 @@ public class FeatureUtil {
     }
 
     private static String initPath(EvolutionState state) {
-        String outputPath = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/out/terminals/";
-        if (state.population.subpops.length == 2) {
-            outputPath += "coevolution/";
-        } else {
-            outputPath += "simple/";
-        }
-        String filePath = state.parameters.getString(new Parameter("filePath"), null);
-        if (filePath == null) {
-            outputPath += "dynamic/";
-        } else {
-            outputPath += "static/";
-        }
-        return outputPath;
+//        String outputPath = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/out/terminals/";
+//        if (state.population.subpops.length == 2) {
+//            outputPath += "coevolution/";
+//        } else {
+//            outputPath += "simple/";
+//        }
+//        String filePath = state.parameters.getString(new Parameter("filePath"), null);
+//        if (filePath == null) {
+//            outputPath += "dynamic/";
+//        } else {
+//            outputPath += "static/";
+//        }
+//        return outputPath;
+        return "";
     }
 }
