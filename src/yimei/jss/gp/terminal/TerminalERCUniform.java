@@ -2,6 +2,7 @@ package yimei.jss.gp.terminal;
 
 import ec.EvolutionState;
 import ec.gp.ERC;
+import ec.gp.GPFunctionSet;
 import ec.util.Parameter;
 import yimei.jss.gp.GPRuleEvolutionState;
 
@@ -19,6 +20,10 @@ public class TerminalERCUniform extends TerminalERC {
 
         //Assume here we are dealing with simple gp
         int subPopNum = 0;
+        if (base.toString().endsWith("1")) {
+            subPopNum = 1;
+        }
+
         terminal = ((GPRuleEvolutionState)state).pickTerminalRandom(subPopNum);
     }
 
@@ -36,7 +41,23 @@ public class TerminalERCUniform extends TerminalERC {
     }
 
     @Override
-    public void mutateERC(EvolutionState state, int thread) {
-        resetNode(state, thread);
+    public void resetNode(EvolutionState state, int thread, GPFunctionSet set) {
+        //Assume here we are dealing with simple gp
+        int subPopNum = 0;
+        if (set.toString().endsWith("1")) {
+            subPopNum = 1;
+        }
+        terminal = ((GPRuleEvolutionState)state).pickTerminalRandom(subPopNum);
+
+        if (terminal instanceof ERC) {
+            ERC ercTerminal = new DoubleERC();
+            ercTerminal.resetNode(state, thread, set);
+            terminal = ercTerminal;
+        }
+    }
+
+    @Override
+    public void mutateERC(EvolutionState state, int thread, GPFunctionSet set) {
+        resetNode(state, thread, set);
     }
 }

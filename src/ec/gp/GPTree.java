@@ -426,11 +426,12 @@ public class GPTree implements GPNodeParent, Prototype
     public void buildTree(final EvolutionState state, final int thread) 
         {
         GPInitializer initializer = ((GPInitializer)state.initializer);
-        child = constraints(initializer).init.newRootedTree(state,
-            constraints(initializer).treetype,
+        GPTreeConstraints constraints = constraints(initializer);
+        child = constraints.init.newRootedTree(state,
+            constraints.treetype,
             thread,
             this,
-            constraints(initializer).functionset,
+             constraints.functionset,
             0,
             GPNodeBuilder.NOSIZEGIVEN);
         }

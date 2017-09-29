@@ -105,7 +105,7 @@ public abstract class KozaBuilder extends GPNodeBuilder
             terminals.length != 0)                                                      // AND if there are available terminal
             {
             GPNode n = (GPNode)(terminals[state.random[thread].nextInt(terminals.length)].lightClone());
-            n.resetNode(state,thread);  // give ERCs a chance to randomize
+            n.resetNode(state,thread,set);  // give ERCs a chance to randomize
             n.argposition = (byte)argposition;
             n.parent = parent;
             return n;
@@ -167,7 +167,7 @@ public abstract class KozaBuilder extends GPNodeBuilder
             terminals.length != 0)                                                      // AND if there are available terminal
             {
             GPNode n = (GPNode)(terminals[state.random[thread].nextInt(terminals.length)].lightClone());
-            n.resetNode(state,thread);  // give ERCs a chance to randomize
+            n.resetNode(state,thread,set);  // give ERCs a chance to randomize
             n.argposition = (byte)argposition;
             n.parent = parent;
             return n;
@@ -179,7 +179,7 @@ public abstract class KozaBuilder extends GPNodeBuilder
             if (triedTerminals) warnAboutNoTerminalWithType(type, false, state);        // we tried terminal and we're here because there were none!
 
             GPNode n = (GPNode)(nodes[state.random[thread].nextInt(nodes.length)].lightClone());
-            n.resetNode(state,thread);  // give ERCs a chance to randomize
+            n.resetNode(state,thread,set);  // give ERCs a chance to randomize
             n.argposition = (byte)argposition;
             n.parent = parent;
 

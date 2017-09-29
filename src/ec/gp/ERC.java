@@ -165,7 +165,13 @@ public abstract class ERC extends GPNode
         resetNode(state,thread);
         }
 
-    /** To successfully write to a DataOutput, you must override this to write your specific ERC data out.  The
+    public void mutateERC(final EvolutionState state, final int thread, GPFunctionSet set)
+        {
+            resetNode(state,thread,set);
+        }
+
+
+        /** To successfully write to a DataOutput, you must override this to write your specific ERC data out.  The
         default implementation issues a fatal error. */
     public void writeNode(final EvolutionState state, final DataOutput dataOutput) throws IOException
         {

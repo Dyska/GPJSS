@@ -56,7 +56,6 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
         this.terminals[subPopNum] = terminals;
     }
 
-
     /**
 	 * Initialize the terminal set with all the job shop attributes.
 	 */

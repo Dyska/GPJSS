@@ -609,15 +609,16 @@ public abstract class GPNode implements GPNodeParent, Prototype
         return false;
         }
 
+    public void resetNode(final EvolutionState state, final int thread) { }
 
-    /** Starts a node in a new life immediately after it has been cloned.
+        /** Starts a node in a new life immediately after it has been cloned.
         The default version of this function does nothing.  The purpose of
         this function is to give ERCs a chance to set themselves to a new
         random value after they've been cloned from the prototype.
         You should not assume that the node is properly connected to other
         nodes in the tree at the point this method is called. */
 
-    public void resetNode(final EvolutionState state, final int thread) { }
+    public void resetNode(final EvolutionState state, final int thread, final GPFunctionSet functionSet) { }
 
     /** A convenience function for identifying a GPNode in an error message */
     public String errorInfo() { return "GPNode " + toString() + " in the function set for tree " + ((GPTree)(rootParent())).treeNumber(); }
