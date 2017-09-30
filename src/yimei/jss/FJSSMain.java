@@ -150,7 +150,7 @@ public class FJSSMain {
             try (DirectoryStream<Path> stream = Files.newDirectoryStream(dir)) {
                 for (Path path : stream) {
                     if (path.toFile().isDirectory()) {
-                        getFileNames(fileNames, path, ".fjs");
+                        getFileNames(fileNames, path, ext);
                     } else {
                         if (path.toString().endsWith(ext)) {
                             fileNames.add(path.toString());
