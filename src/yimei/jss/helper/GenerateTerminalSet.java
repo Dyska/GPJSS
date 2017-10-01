@@ -54,7 +54,6 @@ public class GenerateTerminalSet {
             //if no routing files, will not do anything, so can safely call this also
             chooseTerminals(outputDirectory, d, RuleType.ROUTING, terminalCSVs);
         }
-
     }
 
     public static List<Path> getDirectoryNames(Path dir) {

@@ -276,8 +276,8 @@ gp.fs.1.func.6.nc =                     nc2
 #gp.tree.print-style =                  dot
 
 #terminals-from = relative
-terminals-from.0 = test.csv
-terminals-from.1 = routing.csv
+#terminals-from.0 = test.csv
+#terminals-from.1 = routing.csv
 
 
 

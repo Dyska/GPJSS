@@ -219,5 +219,3 @@ eval.problem.eval-model.objectives.0 = makespan
 eval.problem.eval-model.sim-models = 1
 eval.problem.eval-model.sim-models.0.util-level = 0.85
 eval.problem.eval-model.rotate-sim-seed = false
-
-terminals-from = relative

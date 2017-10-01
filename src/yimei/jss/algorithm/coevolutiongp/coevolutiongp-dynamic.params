@@ -59,6 +59,34 @@ pop.subpop.0.species.mutation-distribution-index = 21
 pop.subpop.0.species.alternative-polynomial-version = true
 pop.subpop.0.species.mutation-bounded = true
 
+pop.subpop.1 =                          ec.Subpopulation
+pop.subpop.1.duplicate-retries =        2
+pop.subpop.1.size =                     100
+pop.subpop.1.species =                  ec.gp.GPSpecies
+pop.subpop.1.species.crossover-type =   one
+pop.subpop.1.species.genome-size =      10
+pop.subpop.1.species.fitness =          ec.multiobjective.MultiObjectiveFitness
+pop.subpop.1.species.fitness.num-objectives = 1
+pop.subpop.1.species.fitness.maximize = false
+pop.subpop.1.species.ind =              ec.gp.GPIndividual
+pop.subpop.1.species.ind.numtrees =     1
+pop.subpop.1.species.ind.tree.0 =       ec.gp.GPTree
+pop.subpop.1.species.ind.tree.0.tc =    tc1
+pop.subpop.1.species.min-gene =         -2.048
+pop.subpop.1.species.max-gene =         2.048
+pop.subpop.1.species.pipe =             ec.breed.MultiBreedingPipeline
+pop.subpop.1.species.pipe.source.0 =    ec.gp.koza.CrossoverPipeline
+pop.subpop.1.species.pipe.source.0.prob = 0.80
+pop.subpop.1.species.pipe.source.0.source.0 = ec.select.TournamentSelection
+pop.subpop.1.species.pipe.source.0.source.1 = same
+pop.subpop.1.species.pipe.num-sources = 3
+pop.subpop.1.species.mutation-type =    gauss
+pop.subpop.1.species.mutation-stdev =   0.23
+pop.subpop.1.species.mutation-type = 	polynomial
+pop.subpop.1.species.mutation-distribution-index = 21
+pop.subpop.1.species.alternative-polynomial-version = true
+pop.subpop.1.species.mutation-bounded = true
+
 # GP initializer
 init = ec.gp.GPInitializer
 
@@ -72,6 +100,15 @@ pop.subpop.0.species.pipe.source.1 =    ec.gp.koza.MutationPipeline
 pop.subpop.0.species.pipe.source.1.prob = 0.15
 pop.subpop.0.species.pipe.source.2 =    ec.breed.ReproductionPipeline
 pop.subpop.0.species.pipe.source.2.prob = 0.05
+
+pop.subpop.1.species.pipe.generate-max = false
+pop.subpop.1.species.pipe.num-sources = 3
+pop.subpop.1.species.pipe.source.0 =    ec.gp.koza.CrossoverPipeline
+pop.subpop.1.species.pipe.source.0.prob = 0.80
+pop.subpop.1.species.pipe.source.1 =    ec.gp.koza.MutationPipeline
+pop.subpop.1.species.pipe.source.1.prob = 0.15
+pop.subpop.1.species.pipe.source.2 =    ec.breed.ReproductionPipeline
+pop.subpop.1.species.pipe.source.2.prob = 0.05
 
 # Selection for reproduction
 breed.reproduce.source.0 =              ec.select.TournamentSelection
@@ -111,12 +148,18 @@ gp.type.a.0.name =                      nil
 gp.type.s.size =                        0
 
 # GP tree constraints
-gp.tc.size =                            1
+gp.tc.size =                            2
 gp.tc.0 =                               ec.gp.GPTreeConstraints
 gp.tc.0.name =                          tc0
 gp.tc.0.fset =                          f0
 gp.tc.0.returns =                       nil
 gp.tc.0.init =                          ec.gp.koza.HalfBuilder
+
+gp.tc.1 =                               ec.gp.GPTreeConstraints
+gp.tc.1.name =                          tc1
+gp.tc.1.fset =                          f1
+gp.tc.1.returns =                       nil
+gp.tc.1.init =                          ec.gp.koza.HalfBuilder
 
 # Koza half-ramp-and-ramp parameters, for gp.tc.0.init
 gp.koza.half.min-depth =                2
@@ -191,7 +234,7 @@ gp.adf-stack.context =                  ec.gp.ADFContext
 # ==============================
 
 # GP function set parameters
-gp.fs.size =                            1
+gp.fs.size =                            2
 gp.fs.0.name =                          f0
 gp.fs.0.size =                          7
 gp.fs.0.func.0 =                        yimei.jss.gp.terminal.TerminalERCUniform
@@ -208,8 +251,23 @@ gp.fs.0.func.5 =                        yimei.jss.gp.function.Max
 gp.fs.0.func.5.nc =                     nc2
 gp.fs.0.func.6 =                        yimei.jss.gp.function.Min
 gp.fs.0.func.6.nc =                     nc2
-#gp.fs.0.func.7 =                       yimei.jss.gp.function.If
-#gp.fs.0.func.7.nc = nc3
+
+gp.fs.1.name =                          f1
+gp.fs.1.size =                          7
+gp.fs.1.func.0 =                        yimei.jss.gp.terminal.TerminalERCUniform
+gp.fs.1.func.0.nc =                     nc0
+gp.fs.1.func.1 =                        yimei.jss.gp.function.Add
+gp.fs.1.func.1.nc =                     nc2
+gp.fs.1.func.2 =                        yimei.jss.gp.function.Sub
+gp.fs.1.func.2.nc =                     nc2
+gp.fs.1.func.3 =                        yimei.jss.gp.function.Mul
+gp.fs.1.func.3.nc =                     nc2
+gp.fs.1.func.4 =                        yimei.jss.gp.function.Div
+gp.fs.1.func.4.nc =                     nc2
+gp.fs.1.func.5 =                        yimei.jss.gp.function.Max
+gp.fs.1.func.5.nc =                     nc2
+gp.fs.1.func.6 =                        yimei.jss.gp.function.Min
+gp.fs.1.func.6.nc =                     nc2
 
 
 # ==============================
@@ -218,7 +276,5 @@ gp.fs.0.func.6.nc =                     nc2
 #gp.tree.print-style =                  c
 #pop.subpop.0.species.ind.tree.0.c-operators = false
 #gp.tree.print-style =                  dot
-
-terminals-from = relative
 
 
