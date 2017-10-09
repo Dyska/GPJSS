@@ -1,5 +1,5 @@
 #Run from command line with: "Rscript process_cleaned_results.R folder_name
-#eg: Rscript process_cleaned_results_dynamic.R simple
+#eg: Rscript process_cleaned_results_dynamic.R coevolution-fixed
 
 args = commandArgs(trailingOnly=TRUE)
 if (length(args) == 0) {

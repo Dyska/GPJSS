@@ -305,7 +305,7 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
             p = new Parameter(P_TERMINALS_FROM);
 
             terminalsFrom = new String[]{parameters.getStringWithDefault(p,
-                    null, "basic")};
+                    null, "relative")};
 
             p = new Parameter(P_INCLUDE_ERC);
             includeErc = new boolean[]{parameters.getBoolean(p, null, false)};
@@ -322,7 +322,7 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
                 //might have provided other value by mistake, we should check for this
                 p = new Parameter(P_TERMINALS_FROM);
                 subPop1TerminalSet = parameters.getStringWithDefault(p,
-                        null, "basic");
+                        null, "relative");
                 output.warning("No terminal set for subpopulation 1 specified - using "+subPop1TerminalSet+".");
 
             }

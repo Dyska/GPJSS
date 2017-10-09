@@ -17,6 +17,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import static yimei.jss.FJSSMain.getFileNames;
+import static yimei.jss.gp.terminal.JobShopAttribute.relativeAttributes;
 import static yimei.jss.helper.GridResultCleaner.writeLine;
 
 /**
@@ -32,8 +33,8 @@ public class GenerateTerminalSet {
         //then we should decide which ones to keep, and output these
         //features into a csv file in the /terminal/ directory
 
-        // grid_results/static/raw/simple_feature_selection/
-        // static/raw/simple_feature_selection/
+        // grid_results/dynamic/raw/simple_feature_selection/
+        // dynamic/raw/simple_feature_selection/
         String path = "";
         String outputDirectory = "";
         if (args.length > 0) {
@@ -50,9 +51,9 @@ public class GenerateTerminalSet {
         for (Path d : directoryNames) {
             System.out.println("Terminal counts for "+d.toString());
             List<String> terminalCSVs = getFileNames(new ArrayList<>(), d, ".terminals.csv");
-            chooseTerminals(outputDirectory, d, RuleType.SEQUENCING, terminalCSVs);
             //if no routing files, will not do anything, so can safely call this also
             chooseTerminals(outputDirectory, d, RuleType.ROUTING, terminalCSVs);
+            chooseTerminals(outputDirectory, d, RuleType.SEQUENCING, terminalCSVs);
         }
     }
 
@@ -102,52 +103,64 @@ public class GenerateTerminalSet {
 
     public static void chooseTerminals(String outputDirectory, Path d,
                                        RuleType ruleType, List<String> terminalCSVs) {
-        HashMap<String, Integer> terminalCounts = new HashMap<>();
-        if (terminalCSVs.size() != 30 && terminalCSVs.size() != 60) {
-            System.out.println("Only "+terminalCSVs.size()+" terminal files for "+d.toString());
-        }
+        //we essentially want to have a list of all terminals
+        //then, for each terminal file, want to record whether that terminal file included it
+        JobShopAttribute[] attributes = relativeAttributes();
+        int numAttributes = attributes.length;
+        int[][] attributeCounts = new int[numAttributes][30];
+        boolean isRead = false;
+
         for (String fileName: terminalCSVs) {
             if (fileName.contains(ruleType.name())) {
+                isRead = true;
                 List<String> terminals = readFromFile(fileName);
                 for (String terminal: terminals) {
-                    Integer count = terminalCounts.get(terminal);
-                    if (count == null) {
-                        count = 0;
+                    //what is the index of this terminal?
+                    int index = -1;
+                    for (int i = 0; i < numAttributes && index == -1; ++i) {
+                        if (attributes[i].getName().equals(terminal)) {
+                            index = i;
+                        }
                     }
-                    terminalCounts.put(terminal,count+1);
+
+                    //what number job was this?
+                    String[] fileNameParts = fileName.split("job.");
+                    int jobNum = Integer.parseInt(fileNameParts[1].split(" -")[0]);
+                    //System.out.println("Terminal "+terminal+" found in job "+jobNum);
+                    attributeCounts[index][jobNum] = 1;
                 }
             }
         }
-        //System.out.println(ruleType.name() + " terminals.");
-        List<String> chosenTerminals = new ArrayList<>();
-        if (!terminalCounts.keySet().isEmpty()) {
-            //allows us to be lazy and call this for routing rules if there are none
-            //without creating output files
-            for (String terminal: terminalCounts.keySet()) {
-                //System.out.println(terminal +": "+terminalCounts.get(terminal));
-                if (terminalCounts.get(terminal) >= 15) {
-                    chosenTerminals.add(terminal);
-                }
-            }
+        if (isRead) {
             File outputFile = createFileName(outputDirectory, d, ruleType);
             //now output this list of chosen terminals to a file
-            outputToFile(outputFile, chosenTerminals);
+            outputToFile(outputFile, attributeCounts);
         }
     }
 
     public static File createFileName(String outputDirectory, Path d, RuleType ruleType) {
-        outputDirectory = (new File("")).getAbsolutePath()+"/terminals/"+outputDirectory+"/";
+        outputDirectory = (new File("")).getAbsolutePath()+"/feature_selection/"+outputDirectory+"/";
         String path = d.toString();
         String fileName = outputDirectory + path.split("/")[path.split("/").length-1];
         fileName += "-"+ruleType.name()+".csv";
         return new File(fileName);
     }
 
-    public static void outputToFile(File csvFile, List<String> chosenTerminals) {
+    public static void outputToFile(File csvFile, int[][] attributeCounts) {
         try (FileWriter writer = new FileWriter(csvFile)) {
-            for (String terminal: chosenTerminals) {
+            List<String> headers = new ArrayList<String>();
+            headers.add("Terminal");
+            for (int i = 0; i < 30; ++i) {
+                headers.add("J"+i);
+            }
+            writeLine(writer, headers);
+            JobShopAttribute[] attributes = relativeAttributes();
+            for (int i = 0; i < attributeCounts.length; ++i) {
                 List<String> terminalLine = new ArrayList<String>();
-                terminalLine.add(terminal);
+                terminalLine.add(attributes[i].getName());
+                for (int j = 0; j < 30; ++j) {
+                    terminalLine.add(String.valueOf(attributeCounts[i][j]));
+                }
                 writeLine(writer, terminalLine);
             }
             writer.flush();

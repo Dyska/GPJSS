@@ -12,7 +12,6 @@ import yimei.jss.simulation.state.SystemState;
  * The priority of this method should be the amount of work in the queue.
  */
 public class WIQ extends AbstractRule {
-    private RuleType type;
 
     public WIQ(RuleType t) {
         name = "\"WIQ\"";

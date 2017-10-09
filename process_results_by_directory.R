@@ -1,5 +1,5 @@
 #Run from command line with: "Rscript process_cleaned_results.R folder_name
-#eg: Rscript process_results_by_directory.R fjss_coevolve_fixed
+#eg: Rscript process_results_by_directory.R coevolve
 
 args = commandArgs(trailingOnly=TRUE)
 if (length(args) == 0) {

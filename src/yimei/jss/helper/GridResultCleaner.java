@@ -144,7 +144,7 @@ public class GridResultCleaner {
         return makespans;
     }
 
-    public int roundMakespan(double makespan) {
+    public static int roundMakespan(double makespan) {
         //makespans are being calculated by multiplying benchmark by fitness
         //should be extremely close to an integer value
         int makespanInt = (int) Math.round(makespan);
@@ -229,9 +229,6 @@ public class GridResultCleaner {
                 for (Double makespan: makespans) {
                     makeSpansString += makespan.toString() +",";
                 }
-                if (makeSpansString.length() == 0) {
-                    int a =1;
-                }
                 makespanCSV.add(makeSpansString.substring(0, makeSpansString.length()-1));
                 writeLine(writer, makespanCSV);
             }
@@ -289,8 +286,8 @@ public class GridResultCleaner {
     }
 
     public static void main(String args[]) {
-        GridResultCleaner grc = new GridResultCleaner("static","simple",
-                1, true );
+        GridResultCleaner grc = new GridResultCleaner("dynamic","simple_modified_terminal_final",
+                1, true);
         grc.cleanResults();
     }
 }

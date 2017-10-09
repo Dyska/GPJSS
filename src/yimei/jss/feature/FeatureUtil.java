@@ -55,7 +55,8 @@ public class FeatureUtil {
             pc = clearingEvaluator.getPhenoCharacterisation()[subPopNum];
             radius = clearingEvaluator.getRadius();
         } else if (state.evaluator instanceof MultiPopCoevolutionaryClearingEvaluator) {
-            MultiPopCoevolutionaryClearingEvaluator clearingEvaluator = (MultiPopCoevolutionaryClearingEvaluator) state.evaluator;
+            MultiPopCoevolutionaryClearingEvaluator clearingEvaluator =
+                    (MultiPopCoevolutionaryClearingEvaluator) state.evaluator;
             pc = clearingEvaluator.getPhenoCharacterisation()[subPopNum];
             radius = clearingEvaluator.getRadius();
         }
@@ -289,7 +290,7 @@ public class FeatureUtil {
             e.printStackTrace();
         }
 
-        return (GPNode[]) selFeatures.toArray();
+        return selFeatures.toArray(new GPNode[0]);
     }
 
     /**

@@ -223,3 +223,5 @@ eval.problem.eval-model.sim-models.0.util-level = 0.85
 eval.problem.eval-model.rotate-sim-seed = true
 eval.problem.eval-model.sim-models.0.num-jobs = 5000
 eval.problem.eval-model.sim-models.0.warmup-jobs = 1000
+
+terminals-from = relative

@@ -2,7 +2,7 @@
 #Each FJSS is run 30 times for each evolution option,
 #Will be looking at data in /cleaned/ folders
 #Will have to specify two folder names within cleaned
-#eg: Rscript t_test.R static fjss_coevolve_fixed fjss_simple_fixed
+#eg: Rscript t_test.R static coevolve simple
 #eg: Rscript t_test.R dynamic coevolution simple
 
 args = commandArgs(trailingOnly=TRUE)

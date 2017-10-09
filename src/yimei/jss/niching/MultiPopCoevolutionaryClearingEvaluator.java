@@ -64,7 +64,6 @@ public class MultiPopCoevolutionaryClearingEvaluator extends MultiPopCoevolution
     @Override
     public void evaluatePopulation(final EvolutionState state) {
         super.evaluatePopulation(state);
-
         if (clear) {
             Clearing.clearPopulation(state, radius, capacity,
                     phenoCharacterisation);
