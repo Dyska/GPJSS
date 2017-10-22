@@ -285,7 +285,7 @@ public class FJSSMain {
             path = (new File("")).getAbsolutePath() + "/data/FJSS/" + path;
             runStaticSimulation(path);
         } else if (simulationType.equals("dynamic")) {
-            AbstractRule sequencingRule = new FCFS(RuleType.SEQUENCING);
+            AbstractRule sequencingRule = new WSPT(RuleType.SEQUENCING);
             AbstractRule routingRule = new WIQ(RuleType.ROUTING);
             Objective[] objectives = new Objective[]{MEAN_FLOWTIME, MAX_FLOWTIME, MEAN_WEIGHTED_FLOWTIME};
             Double[] utilLevels = new Double[]{0.85, 0.95};
@@ -422,14 +422,20 @@ public class FJSSMain {
         SchedulingSet set = createSchedulingSet(seed,o,utilLevel);
 
         int numRuns = 30;
-        double fitnessSum = 0.0;
+        double[] results = new double[numRuns];
         for (int i = 0; i < numRuns; ++i) {
             sequencingRule.calcFitness(fitness, null, set, routingRule, objectives);
-            fitnessSum += fitness.fitness();
+            results[i] = fitness.fitness();
             set.rotateSeed(objectives);
         }
 
-        System.out.println("Fitness averaged across "+numRuns+ " runs: "+(fitnessSum/numRuns));
+        String resultString = "";
+        for (int i = 0; i < numRuns; ++i) {
+            resultString += results[i] +",";
+        }
+        System.out.println(resultString.substring(0,resultString.length()-1));
+
+        //System.out.println("Fitness averaged across "+numRuns+ " runs: "+(fitnessSum/numRuns));
         System.out.println();
     }
 

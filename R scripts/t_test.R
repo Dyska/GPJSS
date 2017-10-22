@@ -10,12 +10,12 @@ if (length(args) != 3) {
   stop("Three arguments must be supplied.", call.=FALSE)
 }
 
-#simulation_type = "static"
-#a = "coevolve"
-#b = "simple"
-simulation_type = args[1]
-a = args[2]
-b = args[3]
+simulation_type = "static"
+a = "coevolve"
+b = "simple"
+#simulation_type = args[1]
+#a = args[2]
+#b = args[3]
 
 base_directory = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/"
 grid_directory = paste(base_directory, "grid_results/",simulation_type,"/",sep="")
@@ -59,7 +59,7 @@ p_value_function = function(a, b) {
       return (1)
     }
   } else {
-    t_test = t.test(a,b,paired=FALSE)
+    t_test = t.test(a,b,paired=FALSE,alternative = "l")
     return (t_test$p.value)
   }
 }  

@@ -2,11 +2,8 @@ library(ggplot2)
 
 setwd("/Users/dyska/Desktop/Uni/COMP489/GPJSS/grid_results/dynamic/test")
 
-#algos <- c("culling-dagp-1", "culling-dagp-2", "dagp-penalty-0.1")
-algos = c("simple-fixed", "coevolution-fixed")
-algo.names <- c("SimpleGP","CCGP")
-# algos <- c("dagp-penalty-1", "dagp-penalty-0.1", "dagp-penalty-0.01")
-# algo.names <- c("1", "0.1", "0.01")
+algos = c("coevolution-fixed", "coevolution_modified_terminal_final")
+algo.names <- c("CCGP Full","CCGP FS")
 objectives <- rep(c("mean-flowtime", "max-flowtime", "mean-weighted-flowtime"), 2)
 utils <- c(rep(0.85, 3), rep(0.95, 3))
 ddfactors <- rep(4, 6)
@@ -64,8 +61,8 @@ for (s in 1:length(scenarios.name)) {
       if (nrow(rows) == 0)
         next
       
-      rows.mean <- mean(rows$TestFitness)
-      rows.sd <- sd(rows$TestFitness)
+      rows.mean <- mean(rows$RoutRuleUniqueTerminals)
+      rows.sd <- sd(rows$RoutRuleUniqueTerminals)
       rows.se <- rows.sd / sqrt(nrow(rows))
       rows.ci <- 1.96 * rows.sd
       
@@ -88,7 +85,7 @@ g <- g + facet_wrap(~ Scenario, ncol = 3, scales = "free")
 g <- g + theme(legend.title = element_blank())
 g <- g + theme(legend.position = "bottom")
 
-g <- g + labs(y = "Test Fitness")
+g <- g + labs(y = "Unique Terminals per Tree")
 
 g <- g + theme(axis.title.x = element_text(size = 12, face = "bold"))
 g <- g + theme(axis.title.y = element_text(size = 12, face = "bold"))
@@ -96,7 +93,7 @@ g <- g + theme(axis.text.x = element_text(size = 10))
 g <- g + theme(axis.text.y = element_text(size = 10))
 g <- g + theme(strip.text.x = element_text(size = 12))
 
-ggsave("testfit-curve.pdf", width = 9, height = 6)
+ggsave("test-program-size-curve.pdf", width = 9, height = 6)
 
 # table showing
 
@@ -125,5 +122,5 @@ for (s in 1:length(scenarios.name)) {
   rows1 <- subset(finalTestFit.df, Scenario == scenario.name & Algo == algo.names[1])
   rows2 <- subset(finalTestFit.df, Scenario == scenario.name & Algo == algo.names[2])
   #rows3 <- subset(finalTestFit.df, Scenario == scenario.name & Algo == algo.names[3])
-  cat(sprintf("%s & %.2f(%.2f) & %.2f(%.2f) & %.2f(%.2f) \\\\\n", scenarios.name[s], mean(rows1$TestFitness), sd(rows1$TestFitness), mean(rows2$TestFitness), sd(rows2$TestFitness), mean(rows3$TestFitness), sd(rows3$TestFitness)))          
+  cat(sprintf("%s & %.2f(%.2f) & %.2f(%.2f)\\\\\n", scenarios.name[s], mean(rows1$TestFitness), sd(rows1$TestFitness), mean(rows2$TestFitness), sd(rows2$TestFitness)))          
 }
