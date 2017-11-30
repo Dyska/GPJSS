@@ -212,6 +212,20 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
 
 		output.message("The whole program elapsed " + totalTime + " seconds.");
 
+		File timeFile = new File("job." + jobSeed + ".time.csv");
+		try {
+			BufferedWriter writer = new BufferedWriter(new FileWriter(timeFile));
+			writer.write("Gen,Time");
+			writer.newLine();
+			for (int gen = 0; gen < genTimes.size(); gen++) {
+				writer.write(gen + "," + genTimes.get(gen));
+				writer.newLine();
+			}
+			writer.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 		finish(result);
     }
 

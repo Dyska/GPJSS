@@ -23,6 +23,7 @@ stat = ec.simple.SimpleStatistics
 stat.file = $out.stat
 #stat.num-children = 1
 #stat.child.0 = ec.gp.koza.KozaShortStatistics
+#stat.child.0.file = $outtabular.stat
 stat.do-generation = true
 stat.do-message = true
 
@@ -219,3 +220,4 @@ eval.problem.eval-model.objectives.0 = makespan
 eval.problem.eval-model.sim-models = 1
 eval.problem.eval-model.sim-models.0.util-level = 0.85
 eval.problem.eval-model.rotate-sim-seed = false
+terminals-from = relative

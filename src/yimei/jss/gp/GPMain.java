@@ -22,10 +22,10 @@ public class GPMain {
         gpRunArgs.add("-file");
 
         if (isDynamic) {
-            double utilLevel = 0.95;
-            String objective = "mean-weighted-flowtime";
+            double utilLevel = 0.85;
+            String objective = "max-flowtime";
 
-            gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/featureselection/fsgp-coevolutiongp-dynamic.params");
+            gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/featureconstruction/fcgp-simplegp-dynamic.params");
             //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp-dynamic.params");
             //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/simplegp/simplegp-dynamic.params");
             gpRunArgs.add("-p");
@@ -43,17 +43,12 @@ public class GPMain {
         } else {
             //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/featureselection/fsgp-simplegp-static.params");
             //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/featureselection/fsgp-coevolutiongp-static.params");
-            //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/simplegp/simplegp-static-terminal-test.params");
+            //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/simplegp/simplegp.params");
             gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp.params");
-            gpRunArgs.add("-p");
-            gpRunArgs.add("terminals-from.0=static-coevolution/data-FJSS-Hurink_Data-Text-vdata-orb9-SEQUENCING.csv");
-            gpRunArgs.add("-p");
-            gpRunArgs.add("terminals-from.1=static-coevolution/data-FJSS-Hurink_Data-Text-vdata-orb9-ROUTING.csv");
-
-            //Barnes/Text/mt10c1.fjs
-            //static-coevolution/data-FJSS-Barnes-Text-mt10c1-SEQUENCING.CSV
-            //static-coevolution/data-FJSS-Barnes-Text-mt10c1-ROUTING.CSV
-
+            //gpRunArgs.add("-p");
+            //gpRunArgs.add("terminals-from.0=static-coevolution/data-FJSS-Hurink_Data-Text-vdata-orb9-SEQUENCING.csv");
+            //gpRunArgs.add("-p");
+            //gpRunArgs.add("terminals-from.1=static-coevolution/data-FJSS-Hurink_Data-Text-vdata-orb9-ROUTING.csv");
 
             //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/simplegp/simplegp.params");
             //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp.params");

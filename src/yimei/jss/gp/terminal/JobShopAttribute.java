@@ -213,17 +213,10 @@ public enum JobShopAttribute {
                 JobShopAttribute.PROC_TIME,
                 JobShopAttribute.NEXT_PROC_TIME,
                 JobShopAttribute.OP_WAITING_TIME,
-                //JobShopAttribute.NEXT_WAITING_TIME,
                 JobShopAttribute.WORK_REMAINING,
                 JobShopAttribute.NUM_OPS_REMAINING,
-                //JobShopAttribute.WORK_IN_NEXT_QUEUE,
-                //JobShopAttribute.NUM_OPS_IN_NEXT_QUEUE,
-                //JobShopAttribute.RELATIVE_FLOW_DUE_DATE,
-                JobShopAttribute.RELATIVE_DUE_DATE,
                 JobShopAttribute.WEIGHT,
-
                 JobShopAttribute.TIME_IN_SYSTEM,
-                JobShopAttribute.SLACK
         };
     }
 

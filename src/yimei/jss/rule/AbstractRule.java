@@ -102,10 +102,6 @@ public abstract class AbstractRule {
             simulation.setRoutingRule(routingRule);
             simulation.rerun();
 
-            //Can calculate here whether util level is correct
-            //Will need to look at history of all completed jobs
-            //And see
-
             for (int i = 0; i < objectives.size(); i++) {
 //                System.out.println("Makespan: "+simulation.objectiveValue(objectives.get(i)));
 //                System.out.println("Benchmark makespan: "+schedulingSet.getObjectiveLowerBound(i, col));

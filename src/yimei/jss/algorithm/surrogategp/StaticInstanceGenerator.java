@@ -1,7 +1,6 @@
 package yimei.jss.algorithm.surrogategp;
 
 import yimei.jss.rule.RuleType;
-import yimei.jss.rule.operation.basic.FCFS;
 import yimei.jss.rule.workcenter.basic.SBT;
 import yimei.jss.rule.workcenter.basic.WIQ;
 import yimei.jss.simulation.DynamicSimulation;

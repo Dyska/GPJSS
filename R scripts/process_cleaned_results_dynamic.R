@@ -6,7 +6,7 @@ if (length(args) == 0) {
   stop("At least one argument must be supplied", call.=FALSE)
 }
 
-arg = "simple-fixed"
+arg = "coevolution_modified_terminal_final"
 
 base_directory = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/"
 grid_directory = paste(base_directory, "grid_results/dynamic/",sep="")

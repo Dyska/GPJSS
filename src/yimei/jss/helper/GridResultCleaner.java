@@ -4,6 +4,9 @@ import yimei.jss.FJSSMain;
 import yimei.jss.jobshop.FlexibleStaticInstance;
 import yimei.jss.jobshop.Objective;
 import yimei.jss.jobshop.SchedulingSet;
+import yimei.jss.rule.AbstractRule;
+import yimei.jss.rule.RuleType;
+import yimei.jss.rule.workcenter.basic.*;
 import yimei.jss.simulation.Simulation;
 import yimei.jss.simulation.StaticSimulation;
 
@@ -50,11 +53,26 @@ public class GridResultCleaner {
     private boolean doIncludeGenerations;
     private int numPops;
     private boolean isStatic;
+    private AbstractRule routingRule;
 
     public GridResultCleaner(String simulationType, String dirName, int numPops, boolean doIncludeGenerations) {
         this.dataPath =  GRID_PATH + simulationType + "/raw/" + dirName;
         this.outPath =  GRID_PATH + simulationType+ "/cleaned/" + dirName;
         this.numPops = numPops;
+        this.doIncludeGenerations = doIncludeGenerations;
+        if (simulationType.toLowerCase() == "static") {
+            isStatic = true;
+            benchmarkMakespans = InitBenchmarkMakespans();
+        } else {
+            isStatic = false;
+        }
+    }
+
+    public GridResultCleaner(String simulationType, String dirName, AbstractRule routingRule, int numPops, boolean doIncludeGenerations) {
+        this.dataPath =  GRID_PATH + simulationType + "/raw/" + dirName;
+        this.outPath =  GRID_PATH + simulationType+ "/cleaned/" + dirName+"/"+routingRule.getName();
+        this.numPops = numPops;
+        this.routingRule = routingRule;
         this.doIncludeGenerations = doIncludeGenerations;
         if (simulationType.toLowerCase() == "static") {
             isStatic = true;
@@ -76,9 +94,10 @@ public class GridResultCleaner {
         HashMap<String, Integer> makeSpans = new HashMap<String, Integer>();
 
         for (String fileName: fileNames) {
+
             List<Simulation> simulations = new ArrayList<Simulation>();
             FlexibleStaticInstance instance = FlexibleStaticInstance.readFromAbsPath(fileName);
-            Simulation simulation = new StaticSimulation(null, null, instance);
+            Simulation simulation = new StaticSimulation(null, routingRule, instance);
             simulations.add(simulation);
             SchedulingSet schedulingSet = new SchedulingSet(simulations, replications, objectives);
 
@@ -95,6 +114,11 @@ public class GridResultCleaner {
                 if (path.toFile().isDirectory()) {
                     //don't want .DS_Store files...
                     if (!path.toString().startsWith(dataPath+"/.")) {
+                        if (routingRule != null) {
+                            if (!path.toString().endsWith(routingRule.getName())) {
+                                continue;
+                            }
+                        }
                         HashMap<Integer, Double[]> makespans = parseMakespans(path.toString());
                         if (makespans != null) {
                             System.out.println("Creating results file for: "+
@@ -159,6 +183,9 @@ public class GridResultCleaner {
     public double getBenchmarkMakeSpan(String directoryPath) {
         String fileName = directoryPath.substring(directoryPath.indexOf("data-FJSS-")+"data-FJSS-".length());
         fileName = fileName.replace('-','/');
+        if (routingRule != null) {
+            fileName = fileName.substring(0,fileName.length()-routingRule.getName().length()-1);
+        }
         fileName = fileName + ".fjs";
 
         return benchmarkMakespans.getOrDefault(fileName, -1);
@@ -286,7 +313,8 @@ public class GridResultCleaner {
     }
 
     public static void main(String args[]) {
-        GridResultCleaner grc = new GridResultCleaner("dynamic","simple_modified_terminal_final",
+        AbstractRule routingRule = new SBT(RuleType.ROUTING);
+        GridResultCleaner grc = new GridResultCleaner("static","simple_routing_rule_tests", routingRule,
                 1, true);
         grc.cleanResults();
     }

@@ -16,7 +16,7 @@ eval.problem.eval-model.sim-models =    1
 eval.problem.eval-model.sim-models.0.util-level = 0.85
 eval.num-shuffled=			            0
 eval.num-current=                       0
-eval.num-elites =                       1
+eval.num-elites =                       4
 eval.num-prev =                         0
 eval.select-current =                   ec.select.RandomSelection
 eval.subpop.0.select-current =          ec.select.RandomSelection
@@ -30,7 +30,7 @@ pop.default-subpop =			        0
 
 pop.subpop.0 =                          ec.Subpopulation
 pop.subpop.0.duplicate-retries =        2
-pop.subpop.0.size =                     500
+pop.subpop.0.size =                     512
 pop.subpop.0.species =                  ec.gp.GPSpecies
 pop.subpop.0.species.crossover-type =   one
 pop.subpop.0.species.genome-size =      10
@@ -58,7 +58,7 @@ pop.subpop.0.species.mutation-bounded = true
 
 pop.subpop.1 =                          ec.Subpopulation
 pop.subpop.1.duplicate-retries =        2
-pop.subpop.1.size =                     500
+pop.subpop.1.size =                     512
 pop.subpop.1.species =                  ec.gp.GPSpecies
 pop.subpop.1.species.crossover-type =   one
 pop.subpop.1.species.genome-size =      10

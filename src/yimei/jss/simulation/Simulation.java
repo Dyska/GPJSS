@@ -130,7 +130,6 @@ public abstract class Simulation {
             }
         }
         if (!systemState.getJobsInSystem().isEmpty() && !(this instanceof DynamicSimulation)) {
-            //TODO: Check whether this is a problem with DynamicSimulation
             System.out.println("Event queue is empty but simulation is not complete.");
             System.out.println("Makespan is garbage - cannot continue.");
             System.exit(0);
