@@ -196,9 +196,9 @@ public class FeatureUtil {
         for (GPIndividual selIndi : selIndis) {
             double normFit = (selIndi.fitness.fitness() - fitLB) / (fitUB - fitLB);
 
-            if (normFit  < 0)
+            if (normFit < 0) {
                 normFit = 0;
-
+            }
             double votingWeight = normFit;
             votingWeightStat.addValue(votingWeight);
         }
@@ -313,9 +313,9 @@ public class FeatureUtil {
         for (GPIndividual selIndi : selIndis) {
             double normFit = (selIndi.fitness.fitness() - fitLB) / (fitUB - fitLB);
 
-            if (normFit  < 0)
+            if (normFit < 0) {
                 normFit = 0;
-
+            }
             double votingWeight = normFit;
             votingWeightStat.addValue(votingWeight);
         }
@@ -410,9 +410,15 @@ public class FeatureUtil {
      */
     public static List<GPNode> buildingBlocks(List<GPIndividual> indis, int depth) {
         List<GPNode> bbs = new ArrayList<>();
+        HashMap<String, Integer> bbCounts = new HashMap();
 
         for (GPIndividual indi : indis) {
-            collectBuildingBlocks(bbs, indi.trees[0].child, depth);
+            collectBuildingBlocks(bbs, bbCounts, indi.trees[0].child, depth);
+        }
+
+        for (String subtree: bbCounts.keySet()) {
+            System.out.println("Subtree "+subtree+
+                    " appeared "+bbCounts.get(subtree)+" times.");
         }
 
         return bbs;
@@ -420,11 +426,13 @@ public class FeatureUtil {
 
     /**
      * Collect all the depth-k building blocks from a tree.
-     * @param buildingBlocks the set of building blocks.
+     * @param buildingBlockCounts the set of building blocks along with the number of
+     *                            occurrences.
      * @param tree the tree.
      * @param depth the depth of the building blocks.
      */
     public static void collectBuildingBlocks(List<GPNode> buildingBlocks,
+                                             HashMap<String, Integer> buildingBlockCounts,
                                              GPNode tree,
                                              int depth) {
         if (tree.depth() == depth) {
@@ -439,10 +447,20 @@ public class FeatureUtil {
 
             if (!duplicate)
                 buildingBlocks.add(tree);
+
+            //turn tree into usable object
+            //just working for depth 2
+            String treeString = tree.toString()+" "+tree.children[0].toString()+
+                    " "+tree.children[1].toString();
+
+            //add tree to hashmap, increment count if one exists
+            int count = buildingBlockCounts.getOrDefault(treeString,0);
+
+            buildingBlockCounts.put(treeString,count+1);
         }
         else {
             for (GPNode child : tree.children) {
-                collectBuildingBlocks(buildingBlocks, child, depth);
+                collectBuildingBlocks(buildingBlocks, buildingBlockCounts, child, depth);
             }
         }
     }
