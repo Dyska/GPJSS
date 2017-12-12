@@ -3,12 +3,12 @@ package yimei.jss.feature;
 import ec.EvolutionState;
 import ec.Fitness;
 import ec.Individual;
-import ec.app.tutorial4.Mul;
 import ec.gp.GPIndividual;
 import ec.gp.GPNode;
 import ec.gp.GPTree;
 import ec.multiobjective.MultiObjectiveFitness;
-import ec.util.Parameter;
+import net.sf.javaml.core.DefaultDataset;
+import net.sf.javaml.core.DenseInstance;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import yimei.jss.feature.ignore.Ignorer;
 import yimei.jss.gp.GPNodeComparator;
@@ -28,6 +28,13 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.*;
+
+import net.sf.javaml.core.Dataset;
+import net.sf.javaml.core.Instance;
+import net.sf.javaml.clustering.Clusterer;
+import net.sf.javaml.clustering.KMeans;
+
+import javax.xml.crypto.Data;
 
 /**
  * Utility functions for feature selection and construction.
@@ -330,18 +337,123 @@ public class FeatureUtil {
             BBVotingWeightStats.add(new DescriptiveStatistics());
         }
 
+        Dataset data = new DefaultDataset();
+        //need to record id of instances so we can get them later
+        int[][] instanceIDs = new int[selIndis.size()][BBs.size()];
+
         for (int s = 0; s < selIndis.size(); s++) {
             GPIndividual selIndi = selIndis.get(s);
 
             for (int i = 0; i < BBs.size(); i++) {
-                double c = contribution(state, selIndi, BBs.get(i), ruleType);
-                BBContributionStats.get(i).addValue(c);
+                double[] c = new double[] {contribution(state, selIndi, BBs.get(i), ruleType)};
+                BBContributionStats.get(i).addValue(c[0]);
 
-                if (c > 0.001) {
-                    BBVotingWeightStats.get(i).addValue(votingWeightStat.getElement(s));
+                //we have |selIndis| * |BB| individuals
+                //want to cluster them, and assign them either large or small (play with this I guess)
+                //need to create instances to add to dataset
+                if (c[0] > 0.0) {
+                    //no point including value if it has no value
+                    Instance instance = new DenseInstance(c);
+                    data.add(instance);
+                    instanceIDs[s][i] = instance.getID();
+                } else {
+                    instanceIDs[s][i] = -1; //didn't get included
                 }
-                else {
+
+//                if (c > 0.001) {
+//                    BBVotingWeightStats.get(i).addValue(votingWeightStat.getElement(s));
+//                }
+//                else {
+//                    BBVotingWeightStats.get(i).addValue(0);
+//                }
+            }
+        }
+
+        //now we have our full dataset
+        //can do clustering!
+        //Dataset dataset_copy_3 = data.copy();
+        //Dataset dataset_copy_4 = data.copy();
+//        Dataset dataset_copy_5 = data.copy();
+//        Dataset dataset_copy_6 = data.copy();
+//
+//        Clusterer km_2 = new KMeans(2);
+//        Clusterer km_3 = new KMeans(3);
+        int k = 2;
+        KMeans km = new KMeans(k);
+//        Clusterer km_5 = new KMeans(5);
+//        Clusterer km_6 = new KMeans(6);
+
+//        Dataset[] clusters_2 = km_2.cluster(data);
+//        Dataset[] clusters_3 = km_3.cluster(dataset_copy_3);
+        Dataset[] clusters = km.cluster(data);
+
+        //need to find the cluster with the lowest values
+        //clusters will have distinct ranges - any value from a will be lower than any value from b
+        //if a < b
+        Double lowest = clusters[0].instance(0).get(0);
+        int worstClusterIndex = 0;
+        for (int i = 1; i < clusters.length; ++i) {
+            Double instance = clusters[i].instance(0).get(0);
+            if (instance < lowest) {
+                worstClusterIndex = i;
+                lowest = instance;
+            }
+        }
+
+//        Dataset[] clusters_5 = km_5.cluster(dataset_copy_5);
+//        Dataset[] clusters_6 = km_6.cluster(dataset_copy_6);
+
+        //what do these guys look like?
+
+//        Dataset[][] clusters = new Dataset[][] {
+//                //clusters_2,
+//                //clusters_3,
+//                clusters_4,
+//                //clusters_5,
+//                //clusters_6
+//        };
+        for (int i = 0; i < clusters.length; ++i) {
+            Dataset d = clusters[i];
+            d.sort((o1, o2) -> {
+                if (o1.get(0) > o2.get(0)) {
+                    return 1;
+                } else if (o1.get(0) < o2.get(0)){
+                    return -1;
+                }
+                return 0;
+            });
+            System.out.println("Cluster "+(i+1)+" has "+d.size()+
+                    " values, ranging from "+d.get(0)+" to "+d.get(d.size()-1));
+        }
+
+        //clustering complete, now need to find which cluster has the worst values
+        //as this is the cluster which will have its contributions excluded
+
+        //clustering complete, now decide which values to include
+        for (int s = 0; s < selIndis.size(); s++) {
+            for (int i = 0; i < BBs.size(); i++) {
+                int instanceID = instanceIDs[s][i];
+                if (instanceID == -1) {
+                    //wasn't clustered, must have been non-positive contribution
                     BBVotingWeightStats.get(i).addValue(0);
+                    //System.out.println("Contribution of subtree "+i+" to rule "+s+" was non-positive.");
+                } else {
+                    boolean inWorstCluster = false;
+                    //was clustered, now we just need to know whether it was in bottom cluster or not
+                    Dataset worstCluster = clusters[worstClusterIndex];
+                    for (int j = 0; j < worstCluster.size() && !inWorstCluster; ++j) {
+                        if (worstCluster.get(j).getID() == instanceID) {
+                            inWorstCluster = true;
+                            BBVotingWeightStats.get(i).addValue(0);
+                            //System.out.println("Contribution of subtree "+i+" to rule "+s+" was in the bottom cluster.");
+                        }
+                    }
+                    if (!inWorstCluster) {
+                        //should get to vote!
+                        BBVotingWeightStats.get(i).addValue(votingWeightStat.getElement(s));
+                        System.out.println("Rule "+s+" voted for building block "+i+
+                                " with weight "+votingWeightStat.getElement(s)+".");
+                    }
                 }
             }
         }
@@ -376,11 +488,15 @@ public class FeatureUtil {
         }
 
         List<GPNode> selBBs = new LinkedList<>();
+        //System.out.println("Feature requires voting weight "+(0.5 * totalVotingWeight)+" for selection.");
         for (int i = 0; i < BBs.size(); i++) {
             double votingWeight = BBVotingWeightStats.get(i).getSum();
-
+            //can use makeCTree as only depth 2, so not too inefficient
+            System.out.println(BBs.get(i).makeCTree(false,true,true) +" - voting weight: "+votingWeight);
+            //System.out.println("Feature requires voting weight "+(0.5 * totalVotingWeight)+" for selection.");
             // majority voting
-            if (votingWeight > 0.5 * totalVotingWeight) {
+            //TODO: Review this - seems unneccessarily restrictive
+            if (votingWeight > 0.0) {
                 selBBs.add(BBs.get(i));
             }
         }
