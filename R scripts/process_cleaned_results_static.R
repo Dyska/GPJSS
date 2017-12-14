@@ -6,10 +6,10 @@ if (length(args) == 0) {
   stop("At least one argument must be supplied", call.=FALSE)
 }
 
-a = args[1]
-#a = "simple"
+#a = args[1]
+a = "ccgp"
 
-base_directory = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/"
+base_directory = "/home/yskadani/eclipse-workspace/GPJSS/"
 grid_directory = paste(base_directory, "grid_results/static/",sep="")
 input_dir = paste(grid_directory,"cleaned/",sep="")
 output_dir = paste(grid_directory,"processed/",sep="")

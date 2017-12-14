@@ -6,9 +6,9 @@ if (length(args) == 0) {
   stop("At least one argument must be supplied", call.=FALSE)
 }
 
-a = args[1]
+a = "ccgp" #args[1]
 
-base_directory = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/"
+base_directory = "/home/yskadani/eclipse-workspace/GPJSS/"
 grid_directory = paste(base_directory, "grid_results/static/",sep="")
 input_dir = paste(grid_directory,"cleaned/",sep="")
 output_dir = paste(grid_directory,"processed/",sep="")
@@ -41,9 +41,9 @@ sum_mean_lb = 0
 sum_std_dev = 0
 num_vals = 0
 for (filename in filenames) {
-  if (endsWith(filename,".csv") && startsWith(filename,"FJSS")) {
+  if (endsWith(filename,".csv") && startsWith(filename,"data-FJSS")) {
     #shorten the file name to match instance names in bounds table
-    instance_name = substring(filename,6,nchar(filename)-4)
+    instance_name = substring(filename,11,nchar(filename)-4)
     
     #get the bounds out of the table
     bounds = fjss_bounds[which(fjss_bounds["File"] == instance_name),]

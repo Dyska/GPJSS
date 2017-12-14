@@ -46,7 +46,7 @@ import java.util.List;
  */
 public class GridResultCleaner {
     private static final char DEFAULT_SEPARATOR = ',';
-    private static final String GRID_PATH = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/grid_results/";
+    private static final String GRID_PATH = "/home/yskadani/eclipse-workspace/GPJSS/grid_results/";
     private String dataPath;
     private String outPath;
     private HashMap<String, Integer> benchmarkMakespans;
@@ -83,7 +83,7 @@ public class GridResultCleaner {
     }
 
     private HashMap<String, Integer> InitBenchmarkMakespans() {
-        String homePath = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/";
+        String homePath = "/home/yskadani/eclipse-workspace/GPJSS/";
         String dataPath = homePath + "data/FJSS/";
         List<Objective> objectives = new ArrayList<Objective>();
         objectives.add(Objective.MAKESPAN);
@@ -313,9 +313,7 @@ public class GridResultCleaner {
     }
 
     public static void main(String args[]) {
-        AbstractRule routingRule = new SBT(RuleType.ROUTING);
-        GridResultCleaner grc = new GridResultCleaner("static","simple_routing_rule_tests", routingRule,
-                1, true);
+        GridResultCleaner grc = new GridResultCleaner("dynamic","simple_modified_terminal_final",2, true);
         grc.cleanResults();
     }
 }

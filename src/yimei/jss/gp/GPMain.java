@@ -18,16 +18,18 @@ public class GPMain {
         int maxTests = 1;
         boolean isDynamic = true;
 
+        String workingDirectory = (new File("")).getAbsolutePath();
+
         //include path to params file
         gpRunArgs.add("-file");
 
         if (isDynamic) {
             double utilLevel = 0.85;
-            String objective = "max-flowtime";
+            String objective = "mean-flowtime";
 
-            gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/featureconstruction/fcgp-simplegp-dynamic.params");
-            //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp-dynamic.params");
-            //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/simplegp/simplegp-dynamic.params");
+            gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/featureconstruction/fcgp-simplegp-dynamic.params");
+            //gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp-dynamic.params");
+            //gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/simplegp/simplegp-dynamic.params");
             gpRunArgs.add("-p");
             gpRunArgs.add("eval.problem.eval-model.sim-models.0.util-level="+utilLevel);
             gpRunArgs.add("-p");
@@ -41,17 +43,17 @@ public class GPMain {
                 gpRunArgs.remove(gpRunArgs.size()-1);
             }
         } else {
-            //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/featureselection/fsgp-simplegp-static.params");
-            //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/featureselection/fsgp-coevolutiongp-static.params");
-            //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/simplegp/simplegp.params");
-            gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp.params");
+            //gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/featureselection/fsgp-simplegp-static.params");
+            //gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/featureselection/fsgp-coevolutiongp-static.params");
+            //gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/simplegp/simplegp.params");
+            gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp.params");
             //gpRunArgs.add("-p");
             //gpRunArgs.add("terminals-from.0=static-coevolution/data-FJSS-Hurink_Data-Text-vdata-orb9-SEQUENCING.csv");
             //gpRunArgs.add("-p");
             //gpRunArgs.add("terminals-from.1=static-coevolution/data-FJSS-Hurink_Data-Text-vdata-orb9-ROUTING.csv");
 
-            //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/simplegp/simplegp.params");
-            //gpRunArgs.add("/Users/dyska/Desktop/Uni/COMP489/GPJSS/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp.params");
+            //gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/simplegp/simplegp.params");
+            //gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp.params");
             gpRunArgs.add("-p");
 
             //static FJSS, so using file paths

@@ -100,33 +100,32 @@ public class RuleTest {
 
             TestResult result = TestResult.readFromFile(sourceFile, ruleType, numPopulations);
 
-            //Didn't bother saving time files
-            //File timeFile = new File(trainPath + "job." + i + ".time.csv");
-            //result.setGenerationalTimeStat(ResultFileReader.readTimeFromFile(timeFile));
+            File timeFile = new File(trainPath + "job." + i + ".time.csv");
+            result.setGenerationalTimeStat(ResultFileReader.readTimeFromFile(timeFile));
 
-            long start = System.currentTimeMillis();
-
-//            result.validate(objectives);
-
-            for (int j = 0; j < result.getGenerationalRules().size(); j++) {
-                AbstractRule[] generationalRules = result.getGenerationalRules(j);
-                if (numPopulations == 2) {
-                    generationalRules[0].calcFitness(
-                            result.getGenerationalTestFitness(j), null,
-                            testSet, generationalRules[1], objectives);
-                } else {
-                    AbstractRule routingRule = new WIQ(yimei.jss.rule.RuleType.ROUTING);
-                    generationalRules[0].calcFitness(result.getGenerationalTestFitness(j), null,
-                            testSet, routingRule, objectives);
-                }
-
-                System.out.println("Generation " + j + ": test fitness = " +
-                        result.getGenerationalTestFitness(j).fitness());
-            }
-
-            long finish = System.currentTimeMillis();
-            long duration = finish - start;
-            System.out.println("Duration = " + duration + " ms.");
+//            long start = System.currentTimeMillis();
+//
+////            result.validate(objectives);
+//
+//            for (int j = 0; j < result.getGenerationalRules().size(); j++) {
+//                AbstractRule[] generationalRules = result.getGenerationalRules(j);
+//                if (numPopulations == 2) {
+//                    generationalRules[0].calcFitness(
+//                            result.getGenerationalTestFitness(j), null,
+//                            testSet, generationalRules[1], objectives);
+//                } else {
+//                    AbstractRule routingRule = new WIQ(yimei.jss.rule.RuleType.ROUTING);
+//                    generationalRules[0].calcFitness(result.getGenerationalTestFitness(j), null,
+//                            testSet, routingRule, objectives);
+//                }
+//
+//                System.out.println("Generation " + j + ": test fitness = " +
+//                        result.getGenerationalTestFitness(j).fitness());
+//            }
+//
+//            long finish = System.currentTimeMillis();
+//            long duration = finish - start;
+//            System.out.println("Duration = " + duration + " ms.");
 
             testResults.add(result);
         }
@@ -207,11 +206,11 @@ public class RuleTest {
     /**
      * Call this main method with several parameters
      *
-     * /Users/dyska/Desktop/Uni/COMP489/GPJSS/grid_results/dynamic/raw/coevolution-fixed/0.85-max-flowtime/
+     * /home/yskadani/eclipse-workspace/GPJSS/grid_results/dynamic/raw/ccgp/ccgp-0.85-max-flowtime/
      * simple-rule
      * 30
      * dynamic-job-shop
-     * missing-0.85-4.0
+     * missing-0.85-4
      * 2
      * 1
      * max-flowtime
