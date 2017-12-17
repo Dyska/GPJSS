@@ -17,14 +17,22 @@ import yimei.jss.feature.ignore.Ignorer;
 import yimei.jss.gp.GPNodeComparator;
 import yimei.jss.gp.GPRuleEvolutionState;
 import yimei.jss.gp.TerminalsChangable;
+import yimei.jss.gp.function.Div;
+import yimei.jss.gp.function.Mul;
+import yimei.jss.gp.terminal.AttributeGPNode;
 import yimei.jss.gp.terminal.BuildingBlock;
 import yimei.jss.gp.terminal.ConstantTerminal;
+import yimei.jss.gp.terminal.JobShopAttribute;
+import yimei.jss.jobshop.Objective;
 import yimei.jss.niching.ClearingEvaluator;
 import yimei.jss.niching.MultiPopCoevolutionaryClearingEvaluator;
 import yimei.jss.niching.PhenoCharacterisation;
 import yimei.jss.rule.RuleType;
 import yimei.jss.rule.operation.evolved.GPRule;
+import yimei.jss.ruleevaluation.SimpleEvaluationModel;
 import yimei.jss.ruleoptimisation.RuleOptimizationProblem;
+import yimei.jss.simulation.DynamicSimulation;
+import yimei.jss.simulation.Simulation;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -143,10 +151,18 @@ public class FeatureUtil {
 
         MultiObjectiveFitness fit1 = (MultiObjectiveFitness) indi.fitness;
         MultiObjectiveFitness fit2 = (MultiObjectiveFitness) fit1.clone();
+
         GPRule rule = new GPRule(ruleType,(GPTree)indi.trees[0].clone());
         rule.ignore(feature, ignorer);
 
-        int numSubPops = state.population.subpops.length;
+
+        int numSubPops;
+        if (state.population == null) {
+            //happens if we're entering through FCMain
+            numSubPops = 1;
+        } else {
+            numSubPops = state.population.subpops.length;
+        }
 
         Fitness[] fitnesses = new Fitness[numSubPops];
         GPRule[] rules = new GPRule[numSubPops];
@@ -177,9 +193,37 @@ public class FeatureUtil {
             rules[contextIndex] = contextRule;
         }
 
+        //It is important that sequencing rule is at [0] and routing rule is at [1]
+        //as the CCGP evaluation model is expecting this
+        fitnesses[index] = fit2;
+        rules[index] = rule;
+
         problem.getEvaluationModel().evaluate(Arrays.asList(fitnesses), Arrays.asList(rules), state);
 
         return fit2.fitness() - fit1.fitness();
+    }
+
+    public static void initFitness(EvolutionState state,
+                                   GPIndividual indi,
+                                   RuleType ruleType) {
+        RuleOptimizationProblem problem =
+                (RuleOptimizationProblem)state.evaluator.p_problem;
+
+        MultiObjectiveFitness fit = (MultiObjectiveFitness) indi.fitness;
+
+        if (fit.fitness() != 10.0) {
+            System.out.println("Expecting to be here because fitness has not be initialised, what's going on?...");
+            return;
+        }
+
+        //fitness hasn't been initialised
+        GPRule originalRule = new GPRule(ruleType,(GPTree)indi.trees[0].clone());
+
+        Fitness[] fitnessesOriginal = new Fitness[] {fit};
+        GPRule[] rulesOriginal = new GPRule[] {originalRule};
+
+        problem.getEvaluationModel().evaluate(Arrays.asList(fitnessesOriginal), Arrays.asList(rulesOriginal), state);
+        //System.out.println("Fitness of rule: "+fit.fitness());
     }
 
     /**
@@ -313,6 +357,8 @@ public class FeatureUtil {
 
         List<GPNode> BBs = buildingBlocks(selIndis, 2);
 
+        BBs = prefilterBBs(BBs);
+
         DescriptiveStatistics votingWeightStat = new DescriptiveStatistics();
 
         for (GPIndividual selIndi : selIndis) {
@@ -340,6 +386,7 @@ public class FeatureUtil {
         int[][] instanceIDs = new int[selIndis.size()][BBs.size()];
 
         for (int s = 0; s < selIndis.size(); s++) {
+            System.out.println("Finding contributions for rule "+s);
             GPIndividual selIndi = selIndis.get(s);
 
             for (int i = 0; i < BBs.size(); i++) {
@@ -376,8 +423,7 @@ public class FeatureUtil {
                 lowest = instance;
             }
         }
-
-
+        
         for (int i = 0; i < clusters.length; ++i) {
             Dataset d = clusters[i];
             d.sort((o1, o2) -> {
@@ -460,6 +506,8 @@ public class FeatureUtil {
         }
 
         List<GPNode> selBBs = new LinkedList<>();
+        List<Double> selBBsVotingWeights = new LinkedList<>();
+
         //System.out.println("Feature requires voting weight "+(0.5 * totalVotingWeight)+" for selection.");
         for (int i = 0; i < BBs.size(); i++) {
             double votingWeight = BBVotingWeightStats.get(i).getSum();
@@ -469,7 +517,9 @@ public class FeatureUtil {
             //TODO: Review this
             if (votingWeight > 0.0) {
                 selBBs.add(BBs.get(i));
-                System.out.println(BBs.get(i).makeCTree(false,true,true) +" - recieved: "+votingWeight+" voting weight.");
+                selBBsVotingWeights.add(votingWeight);
+                System.out.println(BBs.get(i).makeCTree(false,true,
+                        true) +" - recieved: "+votingWeight+" voting weight.");
             }
         }
 
@@ -477,9 +527,11 @@ public class FeatureUtil {
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(fcFile));
 
-            for (GPNode BB : selBBs) {
+            for (int i = 0; i < selBBs.size(); ++i) {
+                GPNode BB = selBBs.get(i);
                 BuildingBlock bb = new BuildingBlock(BB);
-                writer.write(bb.toString());
+
+                writer.write(bb.toString()+","+selBBsVotingWeights.get(i));
                 writer.newLine();
             }
             writer.close();
@@ -488,6 +540,66 @@ public class FeatureUtil {
         }
 
         return selBBs;
+    }
+
+
+    //This method should have two components.
+    //The first component should simply remove all BBs which
+    //have two of the same terminals eg PT max PT - meaningless
+    //The second component should remove all BBs which compare
+    //two terminals of separate dimensions.
+    public static List<GPNode> prefilterBBs(List<GPNode> BBs) {
+        List<GPNode> dupTerminalsRemovedBBs = filterDuplicateTerminalBBs(BBs);
+        List<GPNode> conflictingDimensionsRemovedBBs = filterConflictingDimensionBBs(dupTerminalsRemovedBBs);
+        return conflictingDimensionsRemovedBBs;
+    }
+
+    //Should remove all subtrees with duplicate terminals being used.
+    private static List<GPNode> filterDuplicateTerminalBBs(List<GPNode> BBs) {
+        List<GPNode> filteredBBs = new ArrayList<>();
+        for (GPNode node: BBs) {
+            //expecting trees of depth 2, so will just have two children which are terminals
+            if (node.depth() != 2) {
+                //no point continuing, the code below will not operate as expected
+                System.out.println("Assumption of all depth 2 subtrees not met.");
+                return null;
+            }
+
+            GPNode[] children = node.children;
+            if (!children[0].equals(children[1])) {
+                //different terminals
+                filteredBBs.add(node);
+            } else {
+                //System.out.println("Removing subtree "+node.makeCTree(false,true,true));
+            }
+        }
+        System.out.println("Removed "+(BBs.size()-filteredBBs.size())+" subtrees with duplicate terminals.");
+        return filteredBBs;
+    }
+
+    //Should remove all subtrees which +, -, max & min two terminals which
+    //are from different dimensions. These dimensions are based on
+    private static List<GPNode> filterConflictingDimensionBBs(List<GPNode> BBs) {
+        List<GPNode> filteredBBs = new ArrayList<>();
+        for (GPNode node: BBs) {
+            if (!(node instanceof Mul || node instanceof Div)) {
+                //operator should be add, sub, max or min
+                //dimensions of attributes should therefore be equal for this to make sense
+                //expecting subtrees of depth 2, so children will be terminals
+                JobShopAttribute js1 = ((AttributeGPNode) node.children[0]).getJobShopAttribute();
+                JobShopAttribute js2 = ((AttributeGPNode) node.children[1]).getJobShopAttribute();
+                if (js1.dimension() == js2.dimension()) {
+                    filteredBBs.add(node);
+                } else {
+                    //System.out.println("Removing subtree with conflicting dimensions: "
+                            //+node.makeCTree(false,true,true));
+                }
+            } else {
+                filteredBBs.add(node);
+            }
+        }
+        System.out.println("Removed "+(BBs.size()-filteredBBs.size())+" subtrees with conflicting dimensions.");
+        return filteredBBs;
     }
 
     /**
@@ -503,12 +615,12 @@ public class FeatureUtil {
         for (GPIndividual indi : indis) {
             collectBuildingBlocks(bbs, bbCounts, indi.trees[0].child, depth);
         }
-
-        for (String subtree: bbCounts.keySet()) {
-            System.out.println("Subtree "+subtree+
-                    " appeared "+bbCounts.get(subtree)+" times.");
-        }
-
+//
+//        for (String subtree: bbCounts.keySet()) {
+//            System.out.println("Subtree "+subtree+
+//                    " appeared "+bbCounts.get(subtree)+" times.");
+//        }
+        System.out.println(bbs.size()+" subtrees found.");
         return bbs;
     }
 
@@ -641,6 +753,11 @@ public class FeatureUtil {
 //            outputPath += "static/";
 //        }
 //        return outputPath;
-        return "";
+        SimpleEvaluationModel evaluationModel = (SimpleEvaluationModel) ((RuleOptimizationProblem)
+                state.evaluator.p_problem).getEvaluationModel();
+        Objective objective = evaluationModel.getObjectives().get(0); //expecting only one objective
+        DynamicSimulation d = (DynamicSimulation) evaluationModel.getSchedulingSet().getSimulations().get(0);
+        double utilLevel = d.getUtilLevel();
+        return "out/subtree_contributions/"+utilLevel+"-"+objective.getName().toLowerCase()+"/";
     }
 }

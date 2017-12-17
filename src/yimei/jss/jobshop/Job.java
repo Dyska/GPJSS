@@ -147,7 +147,6 @@ public class Job implements Comparable<Job> {
         //play with this - just use average values?
         //or average among the options?
 
-        //TODO: Ask Yi and Meng
         double workRemaining = 0.0;
         int numOpsRemaining = 0;
         for (int i = operations.size()-1; i > -1; i--) {

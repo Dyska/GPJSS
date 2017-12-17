@@ -1,31 +1,21 @@
 package yimei.jss;
 
 import ec.multiobjective.MultiObjectiveFitness;
-import ec.util.Parameter;
-import yimei.jss.gp.terminal.AttributeGPNode;
-import yimei.jss.gp.terminal.JobShopAttribute;
 import yimei.jss.jobshop.*;
 import yimei.jss.rule.AbstractRule;
 import yimei.jss.rule.RuleType;
 import yimei.jss.rule.operation.basic.*;
-import yimei.jss.rule.operation.composite.*;
 import yimei.jss.rule.operation.evolved.GPRule;
 import yimei.jss.rule.operation.weighted.*;
 import yimei.jss.rule.workcenter.basic.*;
 import yimei.jss.simulation.DynamicSimulation;
 import yimei.jss.simulation.Simulation;
 import yimei.jss.simulation.StaticSimulation;
-import yimei.jss.simulation.event.AbstractEvent;
-import yimei.jss.simulation.state.SystemState;
-
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-
-import static yimei.jss.helper.GenerateTerminalSet.getDirectoryNames;
 import static yimei.jss.helper.GridResultCleaner.roundMakespan;
 import static yimei.jss.jobshop.Objective.*;
-import static yimei.jss.ruleevaluation.RuleComparison.EvaluateOutput;
 
 /**
  * The main program of job shop scheduling, for basic testing.

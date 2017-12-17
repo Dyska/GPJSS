@@ -76,39 +76,39 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 List<GPIndividual> selIndis =
                         FeatureUtil.selectDiverseIndis(this, individuals, i, 30);
 
-//                fitUB = selIndis.get(0).fitness.fitness();
-//                fitLB = 1 - fitUB;
-//
-//                System.out.println("");
-//                System.out.println("Feature construction analysis being performed for "
-//                        +FeatureUtil.ruleTypes[i]+" population.");
-//                List<GPNode> constructedFeatures =
-//                        FeatureUtil.featureConstruction(this, selIndis,
-//                                FeatureUtil.ruleTypes[i], fitUB, fitLB);
+                fitUB = selIndis.get(0).fitness.fitness();
+                fitLB = 1 - fitUB;
+
+                System.out.println("");
+                System.out.println("Feature construction analysis being performed for "
+                        +FeatureUtil.ruleTypes[i]+" population.");
+                List<GPNode> constructedFeatures =
+                        FeatureUtil.featureConstruction(this, selIndis,
+                                FeatureUtil.ruleTypes[i], fitUB, fitLB);
 
                 //for now, just going to output selected individuals instead
                 //record tree structure and fitness
-                long jobSeed = getJobSeed();
-                File BBInfoFile = new File("job." + jobSeed +
-                        " - "+ FeatureUtil.ruleTypes[i].name() + ".selIndi.csv");
-
-                try {
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(BBInfoFile));
-                    writer.write("Rule,Fitness");
-                    writer.newLine();
-
-                    for (int j = 0; j < selIndis.size(); j++) {
-                        GPIndividual indi = selIndis.get(j);
-                        GPNode node = indi.trees[0].child;
-                        writer.write(node.makeLispTree()+ "," +
-                                indi.fitness.fitness());
-                        writer.newLine();
-                    }
-
-                    writer.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+//                long jobSeed = getJobSeed();
+//                File BBInfoFile = new File("job." + jobSeed +
+//                        " - "+ FeatureUtil.ruleTypes[i].name() + ".selIndi.csv");
+//
+//                try {
+//                    BufferedWriter writer = new BufferedWriter(new FileWriter(BBInfoFile));
+//                    writer.write("Rule,Fitness");
+//                    writer.newLine();
+//
+//                    for (int j = 0; j < selIndis.size(); j++) {
+//                        GPIndividual indi = selIndis.get(j);
+//                        GPNode node = indi.trees[0].child;
+//                        writer.write(node.makeLispTree()+ "," +
+//                                indi.fitness.fitness());
+//                        writer.newLine();
+//                    }
+//
+//                    writer.close();
+//                } catch (IOException e) {
+//                    e.printStackTrace();
+//                }
             }
         }
 

@@ -154,6 +154,55 @@ public enum JobShopAttribute {
         return value;
     }
 
+
+    /**
+     * This method should return the dimension of this job shop attribute.
+     * The three dimensions (defined in 'Constrained Dimensionally Aware Genetic
+     * Programming for Evolving Interpretable Dispatching Rules in Dynamic Job
+     * Shop Scheduling' - Mei et al.) are TIME, COUNT, WEIGHT.
+     * Each terminal fits into exactly one of these categories.
+     * This method should return:
+     *      0 for TIME
+     *      1 for COUNT
+     *      2 for WEIGHT
+     */
+    public int dimension() {
+        int dimension = -1;
+
+        switch (this) {
+            case MACHINE_READY_TIME:
+            case CURRENT_TIME:
+            case MACHINE_WAITING_TIME:
+            case PROC_TIME:
+            case NEXT_PROC_TIME:
+            case OP_READY_TIME:
+            case OP_WAITING_TIME:
+            case RELATIVE_FLOW_DUE_DATE:
+            case DUE_DATE:
+            case RELATIVE_DUE_DATE:
+            case ARRIVAL_TIME:
+            case TIME_IN_SYSTEM:
+            case SLACK:
+                dimension = 0;
+                break;
+            case WORK_IN_QUEUE:
+            case NUM_OPS_IN_QUEUE:
+            case WORK_REMAINING:
+            case NUM_OPS_REMAINING:
+                dimension = 1;
+                break;
+            case WEIGHT:
+                dimension = 2;
+                break;
+            default:
+                System.err.println("Undefined attribute " + name);
+        }
+
+        return dimension;
+    }
+
+
+
     public static double valueOfString(String attribute, OperationOption op, WorkCenter workCenter,
                                        SystemState systemState,
                                        List<JobShopAttribute> ignoredAttributes) {
@@ -219,6 +268,8 @@ public enum JobShopAttribute {
                 JobShopAttribute.TIME_IN_SYSTEM,
         };
     }
+
+
 
     /**
      * The attributes for minimising mean weighted tardiness (Su's paper).
