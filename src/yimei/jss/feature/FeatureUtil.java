@@ -13,6 +13,10 @@ import net.sf.javaml.core.DefaultDataset;
 import net.sf.javaml.core.DenseInstance;
 import net.sf.javaml.core.Instance;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import yimei.jss.bbselection.BBSelectionStrategy;
+import yimei.jss.bbselection.ClusteringStrategy;
+import yimei.jss.bbselection.KHighestStrategy;
+import yimei.jss.bbselection.StaticThresholdStrategy;
 import yimei.jss.feature.ignore.Ignorer;
 import yimei.jss.gp.GPNodeComparator;
 import yimei.jss.gp.GPRuleEvolutionState;
@@ -23,6 +27,7 @@ import yimei.jss.gp.terminal.AttributeGPNode;
 import yimei.jss.gp.terminal.BuildingBlock;
 import yimei.jss.gp.terminal.ConstantTerminal;
 import yimei.jss.gp.terminal.JobShopAttribute;
+import yimei.jss.helper.TestResultCleaner;
 import yimei.jss.jobshop.Objective;
 import yimei.jss.niching.ClearingEvaluator;
 import yimei.jss.niching.MultiPopCoevolutionaryClearingEvaluator;
@@ -34,10 +39,10 @@ import yimei.jss.ruleoptimisation.RuleOptimizationProblem;
 import yimei.jss.simulation.DynamicSimulation;
 import yimei.jss.simulation.Simulation;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -154,7 +159,6 @@ public class FeatureUtil {
 
         GPRule rule = new GPRule(ruleType,(GPTree)indi.trees[0].clone());
         rule.ignore(feature, ignorer);
-
 
         int numSubPops;
         if (state.population == null) {
@@ -340,6 +344,24 @@ public class FeatureUtil {
         return selFeatures.toArray(new GPNode[0]);
     }
 
+    public static double getTotalVotingWeight(List<GPIndividual> selIndis,
+                                              RuleType ruleType,
+                                              double fitUB, double fitLB) {
+        DescriptiveStatistics votingWeightStat = new DescriptiveStatistics();
+
+        for (GPIndividual selIndi : selIndis) {
+            double normFit = (selIndi.fitness.fitness() - fitLB) / (fitUB - fitLB);
+
+            if (normFit < 0) {
+                normFit = 0;
+            }
+            double votingWeight = normFit;
+            votingWeightStat.addValue(votingWeight);
+        }
+
+        return votingWeightStat.getSum();
+    }
+
     /**
      * Feature construction by majority voting based on contribution.
      * A constructed feature/building block is a depth-2 sub-tree.
@@ -353,12 +375,6 @@ public class FeatureUtil {
                                                    List<GPIndividual> selIndis,
                                                    RuleType ruleType,
                                                    double fitUB, double fitLB) {
-        boolean verbose = true;
-
-        List<GPNode> BBs = buildingBlocks(selIndis, 2);
-
-        BBs = prefilterBBs(BBs);
-
         DescriptiveStatistics votingWeightStat = new DescriptiveStatistics();
 
         for (GPIndividual selIndi : selIndis) {
@@ -371,7 +387,30 @@ public class FeatureUtil {
             votingWeightStat.addValue(votingWeight);
         }
 
-        double totalVotingWeight = votingWeightStat.getSum();
+        //At this point here, can write total voting sum to file
+        //Put up in the header and return
+
+
+        //double totalVotingWeight = votingWeightStat.getSum();
+
+//        //for now, just append to total voting weight to end of file
+//        //
+//        long jobSeed = ((GPRuleEvolutionState)state).getJobSeed();
+//        String outputPath = initPath(state);
+//        try {
+//            BufferedWriter bw = new BufferedWriter(new FileWriter(outputPath + "job." +
+//                    jobSeed + " - "+ ruleType.name() + ".bbs.csv", true));
+//            bw.write(String.valueOf(totalVotingWeight));
+//            bw.newLine();
+//            bw.close();
+//            return null;
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+
+        List<GPNode> BBs = buildingBlocks(selIndis, 2);
+
+        //BBs = prefilterBBs(BBs);
 
         List<DescriptiveStatistics> BBContributionStats = new ArrayList<>();
         List<DescriptiveStatistics> BBVotingWeightStats = new ArrayList<>();
@@ -381,9 +420,17 @@ public class FeatureUtil {
             BBVotingWeightStats.add(new DescriptiveStatistics());
         }
 
-        Dataset data = new DefaultDataset();
-        //need to record id of instances so we can get them later
-        int[][] instanceIDs = new int[selIndis.size()][BBs.size()];
+        boolean clustering = true;
+        double threshold = 0.001;
+
+        Dataset data = null;
+        int[][] instanceIDs = null;
+
+        if (clustering) {
+            data = new DefaultDataset();
+            //need to record id of instances so we can get them later
+            instanceIDs = new int[selIndis.size()][BBs.size()];
+        }
 
         for (int s = 0; s < selIndis.size(); s++) {
             System.out.println("Finding contributions for rule "+s);
@@ -397,77 +444,67 @@ public class FeatureUtil {
                 //want to cluster them, and assign them either large or small
                 //need to create instances to add to dataset
                 if (c[0] > 0.0) {
-                    //no point including value if it has no value
-                    Instance instance = new DenseInstance(c);
-                    data.add(instance);
-                    instanceIDs[s][i] = instance.getID();
-                } else {
+                    if (clustering) {
+                        //no point including value if it has no value
+                        Instance instance = new DenseInstance(c);
+                        data.add(instance);
+                        instanceIDs[s][i] = instance.getID();
+                    } else {
+                        //not clustering, just using a static threshold
+                        if (c[0] > threshold) {
+                            BBVotingWeightStats.get(i).addValue(votingWeightStat.getElement(s));
+                        } else {
+                            BBVotingWeightStats.get(i).addValue(0);
+                        }
+                    }
+                } else if (clustering) {
                     instanceIDs[s][i] = -1; //didn't get included
                 }
             }
         }
 
-        int k = 2;
-        KMeans km = new KMeans(k);
-        Dataset[] clusters = km.cluster(data);
+        if (clustering) {
+            Dataset[] clusters = clusterContributions(data);
+            int worstClusterIndex = findWorstCluster(clusters);
 
-        //need to find the cluster with the lowest values
-        //clusters will have distinct ranges - any value from a will be lower than any value from b
-        //therefore can pick any member arbitrarily
-        Double lowest = clusters[0].instance(0).get(0);
-        int worstClusterIndex = 0;
-        for (int i = 1; i < clusters.length; ++i) {
-            Double instance = clusters[i].instance(0).get(0);
-            if (instance < lowest) {
-                worstClusterIndex = i;
-                lowest = instance;
-            }
-        }
-        
-        for (int i = 0; i < clusters.length; ++i) {
-            Dataset d = clusters[i];
-            d.sort((o1, o2) -> {
-                if (o1.get(0) > o2.get(0)) {
-                    return 1;
-                } else if (o1.get(0) < o2.get(0)){
-                    return -1;
-                }
-                return 0;
-            });
-            if (verbose) {
+            for (int i = 0; i < clusters.length; ++i) {
+                Dataset d = clusters[i];
+                d.sort((o1, o2) -> {
+                    if (o1.get(0) > o2.get(0)) {
+                        return 1;
+                    } else if (o1.get(0) < o2.get(0)){
+                        return -1;
+                    }
+                    return 0;
+                });
                 System.out.println("Cluster "+(i+1)+" has "+d.size()+
                         " values, ranging from "+d.get(0)+" to "+d.get(d.size()-1));
             }
-        }
 
-        //clustering complete, now need to find which cluster has the worst values
-        //as this is the cluster which will have its contributions excluded
+            //clustering complete, now need to find which cluster has the worst values
+            //as this is the cluster which will have its contributions excluded
 
-        //clustering complete, now decide which values to include
-        for (int s = 0; s < selIndis.size(); s++) {
-            for (int i = 0; i < BBs.size(); i++) {
-                int instanceID = instanceIDs[s][i];
-                if (instanceID == -1) {
-                    //wasn't clustered, must have been non-positive contribution
-                    BBVotingWeightStats.get(i).addValue(0);
-                    //System.out.println("Contribution of subtree "+i+" to rule "+s+" was non-positive.");
-                } else {
-                    boolean inWorstCluster = false;
-                    //was clustered, now we just need to know whether it was in bottom cluster or not
-                    Dataset worstCluster = clusters[worstClusterIndex];
-                    for (int j = 0; j < worstCluster.size() && !inWorstCluster; ++j) {
-                        if (worstCluster.get(j).getID() == instanceID) {
-                            inWorstCluster = true;
-                            BBVotingWeightStats.get(i).addValue(0);
-                            if (verbose) {
-                                //System.out.println("Contribution of subtree "+i+" to rule "+s+" was in the bottom cluster.");
+            //clustering complete, now decide which values to include
+            for (int s = 0; s < selIndis.size(); s++) {
+                for (int i = 0; i < BBs.size(); i++) {
+                    int instanceID = instanceIDs[s][i];
+                    if (instanceID == -1) {
+                        //wasn't clustered, must have been non-positive contribution
+                        BBVotingWeightStats.get(i).addValue(0);
+                        //System.out.println("Contribution of subtree "+i+" to rule "+s+" was non-positive.");
+                    } else {
+                        boolean inWorstCluster = false;
+                        //was clustered, now we just need to know whether it was in bottom cluster or not
+                        Dataset worstCluster = clusters[worstClusterIndex];
+                        for (int j = 0; j < worstCluster.size() && !inWorstCluster; ++j) {
+                            if (worstCluster.get(j).getID() == instanceID) {
+                                inWorstCluster = true;
+                                BBVotingWeightStats.get(i).addValue(0);
                             }
                         }
-                    }
-                    if (!inWorstCluster) {
-                        //should get to vote!
-                        BBVotingWeightStats.get(i).addValue(votingWeightStat.getElement(s));
-                        if (verbose) {
+                        if (!inWorstCluster) {
+                            //should get to vote!
+                            BBVotingWeightStats.get(i).addValue(votingWeightStat.getElement(s));
                             System.out.println("Rule "+s+" voted for building block "+i+
                                     " with weight "+votingWeightStat.getElement(s)+".");
                         }
@@ -505,25 +542,34 @@ public class FeatureUtil {
             e.printStackTrace();
         }
 
+        //need to achieve normal state by reading in .fcinfo files, then run strategies
+        //below and create file
+
+        //what are we actually using from here on in?
+        //BBs
+        //BBVotingWeightStats
+        //outputPath
+        //jobSeed
+        //ruleType
+
+        //BBSelectionStrategy strategy = new StaticThresholdStrategy(0.0); //simplest threshold
+        //BBSelectionStrategy strategy = new ClusteringStrategy(3);
+        BBSelectionStrategy strategy = new KHighestStrategy(3);
+
         List<GPNode> selBBs = new LinkedList<>();
         List<Double> selBBsVotingWeights = new LinkedList<>();
 
-        //System.out.println("Feature requires voting weight "+(0.5 * totalVotingWeight)+" for selection.");
-        for (int i = 0; i < BBs.size(); i++) {
-            double votingWeight = BBVotingWeightStats.get(i).getSum();
-            //can use makeCTree as only depth 2, so not too inefficient
-            //System.out.println("Feature requires voting weight "+(0.5 * totalVotingWeight)+" for selection.");
-            // majority voting
-            //TODO: Review this
-            if (votingWeight > 0.0) {
-                selBBs.add(BBs.get(i));
-                selBBsVotingWeights.add(votingWeight);
-                System.out.println(BBs.get(i).makeCTree(false,true,
-                        true) +" - recieved: "+votingWeight+" voting weight.");
-            }
-        }
+        //update these empty lists with results
+        strategy.selectBuildingBlocks(BBs,selBBs,BBVotingWeightStats,selBBsVotingWeights);
 
+        //write to file
         File fcFile = new File(outputPath + "job." + jobSeed + " - "+ ruleType.name() + ".bbs.csv");
+        writeBBs(fcFile, selBBs, selBBsVotingWeights);
+
+        return selBBs;
+    }
+
+    public static void writeBBs(File fcFile, List<GPNode> selBBs, List<Double> selBBsVotingWeights) {
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(fcFile));
 
@@ -538,8 +584,150 @@ public class FeatureUtil {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
 
-        return selBBs;
+    private static Dataset[] clusterContributions(Dataset data) {
+        int k = 2;
+        KMeans km = new KMeans(k);
+        Dataset[] clusters = km.cluster(data);
+
+        for (int i = 0; i < clusters.length; ++i) {
+            Dataset d = clusters[i];
+            d.sort((o1, o2) -> {
+                if (o1.get(0) > o2.get(0)) {
+                    return 1;
+                } else if (o1.get(0) < o2.get(0)){
+                    return -1;
+                }
+                return 0;
+            });
+            System.out.println("Cluster "+(i+1)+" has "+d.size()+
+                    " values, ranging from "+d.get(0)+" to "+d.get(d.size()-1));
+        }
+        return clusters;
+    }
+
+
+
+    private static int findWorstCluster(Dataset[] clusters) {
+        //need to find the cluster with the lowest values
+        //clusters will have distinct ranges - any value from a will be lower than any value from b
+        //therefore can pick any member arbitrarily
+        Double lowest = clusters[0].instance(0).get(0);
+        int worstClusterIndex = 0;
+        for (int i = 1; i < clusters.length; ++i) {
+            Double instance = clusters[i].instance(0).get(0);
+            if (instance < lowest) {
+                worstClusterIndex = i;
+                lowest = instance;
+            }
+        }
+        return worstClusterIndex;
+    }
+
+    /**
+     * This method should read in .fcinfo.csv files, add the contributions
+     * from the file into a dataset, perform clustering and then record
+     * the clustering information in the original files.
+     */
+    public static void addClusterColumn(File file) {
+        //should be a .fcinfo.csv file
+        System.out.println(file.getAbsolutePath());
+
+        final BufferedReader br;
+        Dataset data = new DefaultDataset();
+        List<Integer> ids = new ArrayList<>();
+
+        try {
+            br = new BufferedReader(new FileReader(file));
+            String sCurrentLine;
+            sCurrentLine = br.readLine(); //skip headers
+            if (sCurrentLine.endsWith("Cluster")) {
+                if (sCurrentLine.endsWith("Cluster,Cluster")) {
+
+                    //messed up, have at least two Cluster columns
+                    //need to close buffered reader before writing to file, won't need it anymore anyway
+                    br.close();
+                    try {
+                        List<String> newLines = new ArrayList<>();
+                        for (String line : Files.readAllLines(Paths.get(file.getAbsolutePath()), StandardCharsets.UTF_8)) {
+                            if (line.contains("BB,Fitness,Contribution,VotingWeights,NormFit,Size")) {
+                                //replace whatever was there before
+                                newLines.add("BB,Fitness,Contribution,VotingWeights,NormFit,Size,Cluster");
+                            } else {
+                                newLines.add(line);
+                            }
+                        }
+                        Files.write(Paths.get(file.getAbsolutePath()), newLines, StandardCharsets.UTF_8);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+                //this file has already had cluster information included, no need to process
+                return;
+            }
+
+            while ((sCurrentLine = br.readLine()) != null) {
+                String[] components = sCurrentLine.split(String.valueOf(','));
+                double[] contribution = new double[]{ Double.parseDouble(components[2]) };
+                if (contribution[0] > 0.0) {
+                    DenseInstance i = new DenseInstance(contribution);
+                    ids.add(i.getID());
+                    data.add(i);
+                } else {
+                    //so we can keep track of which contribution belongs to which row
+                    ids.add(-1);
+                }
+            }
+            br.close();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        //contributions have all been read in, now can cluster them
+        Dataset[] clusters = clusterContributions(data);
+        int worstClusterIndex = findWorstCluster(clusters);
+
+        //now can write back to files - if cluster = worstCluster - write 0, otherwise write 1
+        List<String> newLines = new ArrayList<>();
+        int count = 0;
+        try {
+            for (String line : Files.readAllLines(Paths.get(file.getAbsolutePath()), StandardCharsets.UTF_8)) {
+                if (line.contains("BB,Fitness,Contribution,VotingWeights,NormFit,Size")) {
+                    newLines.add(line+",Cluster");
+                } else {
+                    int id = ids.get(count);
+                    if (id != -1) {
+                        //was included in cluster
+                        //need to check which cluster it was in
+                        boolean inWorstCluster = false;
+                        //was clustered, now we just need to know whether it was in bottom cluster or not
+                        Dataset worstCluster = clusters[worstClusterIndex];
+                        for (int j = 0; j < worstCluster.size() && !inWorstCluster; ++j) {
+                            if (worstCluster.get(j).getID() == id) {
+                                inWorstCluster = true;
+                                newLines.add(line+",0");
+                            }
+                        }
+                        if (!inWorstCluster) {
+                            //should get to vote!
+                            newLines.add(line+",1");
+                        }
+                    } else {
+                        //not a valid contribution
+                        newLines.add(line+",0");
+                    }
+                    count++;
+                }
+            }
+            Files.write(Paths.get(file.getAbsolutePath()), newLines, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
 
