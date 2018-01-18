@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Created by dyska on 13/01/18.
  */
-public class BBStaticThresholdStrategy implements BBSelectionStrategy {
+public class BBStaticThresholdStrategy extends BBSelectionStrategy {
     private double threshold;
 
     public BBStaticThresholdStrategy(double threshold) {

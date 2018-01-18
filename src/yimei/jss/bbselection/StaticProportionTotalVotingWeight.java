@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Created by dyska on 13/01/18.
  */
-public class StaticProportionTotalVotingWeight implements BBSelectionStrategy {
+public class StaticProportionTotalVotingWeight extends BBSelectionStrategy {
     private double totalVotingWeight;
     private double proportion;
 

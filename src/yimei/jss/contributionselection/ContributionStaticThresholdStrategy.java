@@ -3,17 +3,16 @@ package yimei.jss.contributionselection;
 import ec.gp.GPIndividual;
 import ec.gp.GPNode;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-
 import java.util.List;
 
 /**
  * Created by dyska on 18/01/18.
  */
-public class ContributionStaticThresholdStrategy implements ContributionSelectionStrategy {
+public class ContributionStaticThresholdStrategy extends ContributionSelectionStrategy {
 
     private double threshold;
 
-    public ContributionStaticThresholdStrategy(int threshold) {
+    public ContributionStaticThresholdStrategy(double threshold) {
         this.threshold = threshold;
     }
 

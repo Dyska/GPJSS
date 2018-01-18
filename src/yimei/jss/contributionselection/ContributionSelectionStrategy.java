@@ -9,13 +9,27 @@ import java.util.List;
 /**
  * Created by dyska on 18/01/18.
  */
-public interface ContributionSelectionStrategy {
+public abstract class ContributionSelectionStrategy {
 
-    void selectContributions(double[][] contributions,
+    public abstract void selectContributions(double[][] contributions,
                         List<GPIndividual> selIndis,
                         List<GPNode> BBs,
                         List<DescriptiveStatistics> BBVotingWeightStats,
                         DescriptiveStatistics votingWeightStat);
 
-    String getName();
+    public abstract String getName();
+
+    public static ContributionSelectionStrategy selectStrategy(String name) {
+        if (name.startsWith("Score>")) {
+            //ContributionStaticThreshold
+            double threshold = Double.parseDouble(name.substring("Score>".length()));
+            return new ContributionStaticThresholdStrategy(threshold);
+        } else if (name.endsWith("-Clustering")) {
+            //ContributionClusteringStrategy
+            int k = Integer.parseInt(name.substring(0,name.length()-"-Clustering".length()));
+            return new ContributionClusteringStrategy(k);
+        }
+
+        return null;
+    }
 }

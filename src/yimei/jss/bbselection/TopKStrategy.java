@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Created by dyska on 13/01/18.
  */
-public class TopKStrategy implements BBSelectionStrategy {
+public class TopKStrategy extends BBSelectionStrategy {
     private int k;
 
     public TopKStrategy(int k) {

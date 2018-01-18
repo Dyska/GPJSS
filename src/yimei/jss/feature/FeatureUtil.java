@@ -16,6 +16,7 @@ import yimei.jss.bbselection.BBSelectionStrategy;
 import yimei.jss.bbselection.BBStaticThresholdStrategy;
 import yimei.jss.contributionselection.ContributionClusteringStrategy;
 import yimei.jss.contributionselection.ContributionSelectionStrategy;
+import yimei.jss.contributionselection.ContributionStaticThresholdStrategy;
 import yimei.jss.feature.ignore.Ignorer;
 import yimei.jss.gp.GPNodeComparator;
 import yimei.jss.gp.GPRuleEvolutionState;
@@ -210,7 +211,7 @@ public class FeatureUtil {
 
         MultiObjectiveFitness fit = (MultiObjectiveFitness) indi.fitness;
 
-        if (fit.fitness() != 10.0) {
+        if (fit.fitness() != Double.MAX_VALUE) {
             System.out.println("Expecting to be here because fitness has not be initialised, what's going on?...");
             return;
         }
@@ -357,9 +358,13 @@ public class FeatureUtil {
         return votingWeightStat;
     }
 
+
     /**
      * Feature construction by majority voting based on contribution.
      * A constructed feature/building block is a depth-2 sub-tree.
+     * This method overloads the featureConstruction method below,
+     * providing default contribution and building block selection
+     * strategies.
      * @param state the current evolution state (training set).
      * @param selIndis the selected diverse set of individuals.
      * @param fitUB the upper bound of individual fitness.
@@ -371,10 +376,67 @@ public class FeatureUtil {
     public static List<GPNode> featureConstruction(EvolutionState state,
                                                    List<GPIndividual> selIndis,
                                                    RuleType ruleType,
-                                                   double fitUB, double fitLB, boolean preFiltering) {
-        DescriptiveStatistics votingWeightStat = initVotingWeightStat(selIndis, fitUB, fitLB);
+                                                   double fitUB, double fitLB,
+                                                   boolean preFiltering) {
+        ContributionSelectionStrategy contributionStrategy =
+                new ContributionStaticThresholdStrategy(0.001);
+        BBSelectionStrategy bbStrategy = new BBStaticThresholdStrategy(0.0);
+        return featureConstruction(state, selIndis, ruleType, fitUB, fitLB,
+                preFiltering, contributionStrategy, bbStrategy);
+    }
 
-        ContributionSelectionStrategy contributionSelectionStrategy = new ContributionClusteringStrategy(2);
+    /**
+     * Feature construction by majority voting based on contribution.
+     * A constructed feature/building block is a depth-2 sub-tree.
+     * This method overloads the featureConstruction method below,
+     * providing the ability to pass string representations of
+     * building block and contribution selection strategies.
+     * This is useful for calling from FCGPRuleEvolutionState.
+     * @param state the current evolution state (training set).
+     * @param selIndis the selected diverse set of individuals.
+     * @param fitUB the upper bound of individual fitness.
+     * @param fitLB the lower bound of individual fitness.
+     * @param preFiltering whether or not to filter building blocks.
+     * @param ruleType which type of GP rules we are analysing.
+     * @param contributionStrategyStr name of strategy for selection of meaningful contributions.
+     * @param bbStrategyStr name of strategy for selection of meaningful building blocks.
+     * @return the constructed features (building blocks).
+     */
+    public static List<GPNode> featureConstruction(EvolutionState state,
+                                                   List<GPIndividual> selIndis,
+                                                   RuleType ruleType,
+                                                   double fitUB, double fitLB,
+                                                   boolean preFiltering,
+                                                   String contributionStrategyStr,
+                                                   String bbStrategyStr) {
+        ContributionSelectionStrategy contributionStrategy =
+                ContributionSelectionStrategy.selectStrategy(contributionStrategyStr);
+        BBSelectionStrategy bbStrategy = BBSelectionStrategy.selectStrategy(bbStrategyStr);
+        return featureConstruction(state, selIndis, ruleType, fitUB, fitLB,
+                preFiltering, contributionStrategy, bbStrategy);
+    }
+
+    /**
+     * Feature construction by majority voting based on contribution.
+     * A constructed feature/building block is a depth-2 sub-tree.
+     * @param state the current evolution state (training set).
+     * @param selIndis the selected diverse set of individuals.
+     * @param fitUB the upper bound of individual fitness.
+     * @param fitLB the lower bound of individual fitness.
+     * @param preFiltering whether or not to filter building blocks.
+     * @param ruleType which type of GP rules we are analysing.
+     * @param contributionStrategy strategy for selection of meaningful contributions.
+     * @param bbStrategy strategy for selection of meaningful building blocks.
+     * @return the constructed features (building blocks).
+     */
+    public static List<GPNode> featureConstruction(EvolutionState state,
+                                                   List<GPIndividual> selIndis,
+                                                   RuleType ruleType,
+                                                   double fitUB, double fitLB,
+                                                   boolean preFiltering,
+                                                   ContributionSelectionStrategy contributionStrategy,
+                                                   BBSelectionStrategy bbStrategy) {
+        DescriptiveStatistics votingWeightStat = initVotingWeightStat(selIndis, fitUB, fitLB);
 
         List<GPNode> BBs = buildingBlocks(selIndis, 2);
 
@@ -404,50 +466,22 @@ public class FeatureUtil {
         }
 
         //select which contributions to count
-        contributionSelectionStrategy.selectContributions(contributions,
-                selIndis,
-                BBs,
-                BBVotingWeightStats,
-                votingWeightStat);
+        contributionStrategy.selectContributions(contributions,selIndis,BBs,BBVotingWeightStats, votingWeightStat);
 
         long jobSeed = ((GPRuleEvolutionState)state).getJobSeed();
-        String outputPath = initPath(state,preFiltering);
+        String outputPath = initPath(state, preFiltering);
         File BBInfoFile = new File(outputPath + "job." + jobSeed +
                 " - "+ ruleType.name() + ".fcinfo.csv");
 
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(BBInfoFile));
-            writer.write("BB,Fitness,Contribution,VotingWeights,NormFit,Size");
-            writer.newLine();
+        writeContributions(BBInfoFile,BBs,selIndis,BBContributionStats,BBVotingWeightStats,votingWeightStat);
 
-            for (int i = 0; i < BBs.size(); i++) {
-                BuildingBlock bb = new BuildingBlock(BBs.get(i));
-
-                for (int j = 0; j < selIndis.size(); j++) {
-                    writer.write(bb.toString() + "," +
-                            selIndis.get(j).fitness.fitness() + "," +
-                            BBContributionStats.get(i).getElement(j) + "," +
-                            BBVotingWeightStats.get(i).getElement(j) + "," +
-                            votingWeightStat.getElement(j) + "," +
-                            selIndis.get(j).size());
-                    writer.newLine();
-                }
-            }
-
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        BBSelectionStrategy strategy = new BBStaticThresholdStrategy(0.0); //simplest threshold
-        //BBSelectionStrategy strategy = new ContributionClusteringStrategy(3);
-        //BBSelectionStrategy strategy = new KHighestStrategy(3);
+        //Now select which building blocks to record!
 
         List<GPNode> selBBs = new LinkedList<>();
         List<Double> selBBsVotingWeights = new LinkedList<>();
 
         //update these empty lists with results
-        strategy.selectBuildingBlocks(BBs,selBBs,BBVotingWeightStats,selBBsVotingWeights);
+        bbStrategy.selectBuildingBlocks(BBs,selBBs,BBVotingWeightStats,selBBsVotingWeights);
 
         //write to file
         File fcFile = new File(outputPath + "job." + jobSeed + " - "+ ruleType.name() + ".bbs.csv");
@@ -466,6 +500,36 @@ public class FeatureUtil {
 
                 writer.write(bb.toString()+","+selBBsVotingWeights.get(i));
                 writer.newLine();
+            }
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void writeContributions(File BBInfoFile,
+                                          List<GPNode> BBs,
+                                          List<GPIndividual> selIndis,
+                                          List<DescriptiveStatistics> BBContributionStats,
+                                          List<DescriptiveStatistics> BBVotingWeightStats,
+                                          DescriptiveStatistics votingWeightStat) {
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(BBInfoFile));
+            writer.write("BB,Fitness,Contribution,VotingWeights,NormFit,Size");
+            writer.newLine();
+
+            for (int i = 0; i < BBs.size(); i++) {
+                BuildingBlock bb = new BuildingBlock(BBs.get(i));
+
+                for (int j = 0; j < selIndis.size(); j++) {
+                    writer.write(bb.toString() + "," +
+                            selIndis.get(j).fitness.fitness() + "," +
+                            BBContributionStats.get(i).getElement(j) + "," +
+                            BBVotingWeightStats.get(i).getElement(j) + "," +
+                            votingWeightStat.getElement(j) + "," +
+                            selIndis.get(j).size());
+                    writer.newLine();
+                }
             }
             writer.close();
         } catch (IOException e) {

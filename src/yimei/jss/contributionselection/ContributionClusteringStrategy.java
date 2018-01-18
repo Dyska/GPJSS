@@ -14,7 +14,7 @@ import static yimei.jss.feature.FeatureUtil.findWorstCluster;
 /**
  * Created by dyska on 18/01/18.
  */
-public class ContributionClusteringStrategy implements ContributionSelectionStrategy {
+public class ContributionClusteringStrategy extends ContributionSelectionStrategy {
 
     private int numClusters;
 
@@ -51,20 +51,6 @@ public class ContributionClusteringStrategy implements ContributionSelectionStra
 
         Dataset[] clusters = clusterContributions(data, numClusters);
         int worstClusterIndex = findWorstCluster(clusters);
-
-        for (int i = 0; i < clusters.length; ++i) {
-            Dataset d = clusters[i];
-            d.sort((o1, o2) -> {
-                if (o1.get(0) > o2.get(0)) {
-                    return 1;
-                } else if (o1.get(0) < o2.get(0)){
-                    return -1;
-                }
-                return 0;
-            });
-            System.out.println("Cluster "+(i+1)+" has "+d.size()+
-                    " values, ranging from "+d.get(0)+" to "+d.get(d.size()-1));
-        }
 
         //clustering complete, now need to find which cluster has the worst values
         //as this is the cluster which will have its contributions excluded

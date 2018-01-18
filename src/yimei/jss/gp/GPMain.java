@@ -1,5 +1,7 @@
 package yimei.jss.gp;
 
+import ec.util.Parameter;
+
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -26,6 +28,8 @@ public class GPMain {
         if (isDynamic) {
             double utilLevel = 0.85;
             String objective = "mean-flowtime";
+            String bbSelectionStrategy = "Score>0.0";
+            String contributionSelectionStrategy = "Score>0.001";
 
             gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/featureconstruction/fcgp-simplegp-dynamic.params");
             //gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp-dynamic.params");
@@ -34,6 +38,10 @@ public class GPMain {
             gpRunArgs.add("eval.problem.eval-model.sim-models.0.util-level="+utilLevel);
             gpRunArgs.add("-p");
             gpRunArgs.add("eval.problem.eval-model.objectives.0="+objective);
+            gpRunArgs.add("-p");
+            gpRunArgs.add("bbSelectionStrategy="+bbSelectionStrategy);
+            gpRunArgs.add("-p");
+            gpRunArgs.add("contributionSelectionStrategy="+contributionSelectionStrategy);
             gpRunArgs.add("-p");
             for (int i = 1; i <= 30 && i <= maxTests; ++i) {
                 gpRunArgs.add("seed.0="+String.valueOf(i));

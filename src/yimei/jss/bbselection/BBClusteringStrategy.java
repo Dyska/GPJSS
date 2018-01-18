@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Created by dyska on 13/01/18.
  */
-public class BBClusteringStrategy implements BBSelectionStrategy {
+public class BBClusteringStrategy extends BBSelectionStrategy {
     int numClusters;
 
     public BBClusteringStrategy(int k) {

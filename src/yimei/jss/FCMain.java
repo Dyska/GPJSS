@@ -149,7 +149,7 @@ public class FCMain {
         g.trees = new GPTree[] {GPRule.readFromLispExpression(ruleType,
                 vals[0]).getGPTree()};
         ClearingMultiObjectiveFitness fitness = new ClearingMultiObjectiveFitness();
-        fitness.objectives = new double[] {10.0}; //cannot use provided fitness
+        fitness.objectives = new double[] {Double.MAX_VALUE}; //cannot use provided fitness
         fitness.maxObjective = new double[] {1.0};
         fitness.minObjective = new double[] {0.0};
         fitness.maximize = new boolean[] {false};
@@ -198,24 +198,23 @@ public class FCMain {
 
         double totalVotingWeight = getTotalVotingWeight(utilLevel, objective, seed, ruleType);
 
-        //create our list of strategies
-        List<BBSelectionStrategy> strategies = new ArrayList<>();
-        strategies.add(new TopKStrategy(2));
-        strategies.add(new TopKStrategy(3));
-        strategies.add(new BBClusteringStrategy(2));
-        strategies.add(new BBClusteringStrategy(3));
-        strategies.add( new StaticProportionTotalVotingWeight(totalVotingWeight, 0.25));
-        strategies.add(new StaticProportionTotalVotingWeight(totalVotingWeight, 0.50));
-        strategies.add(new StaticProportionTotalVotingWeight(totalVotingWeight, 0.75));
-        strategies.add(new BBStaticThresholdStrategy(5.0));
-        strategies.add(new BBStaticThresholdStrategy(10.0));
-        strategies.add(new BBStaticThresholdStrategy(15.0));
+        //create our list of building block strategies
+        List<BBSelectionStrategy> bbStrategies = new ArrayList<>();
+        bbStrategies.add(new TopKStrategy(1));
+        bbStrategies.add(new BBClusteringStrategy(2));
+        bbStrategies.add(new BBClusteringStrategy(3));
+        bbStrategies.add( new StaticProportionTotalVotingWeight(totalVotingWeight, 0.25));
+        bbStrategies.add(new StaticProportionTotalVotingWeight(totalVotingWeight, 0.50));
+        bbStrategies.add(new StaticProportionTotalVotingWeight(totalVotingWeight, 0.75));
+        bbStrategies.add(new BBStaticThresholdStrategy(5.0));
+        bbStrategies.add(new BBStaticThresholdStrategy(10.0));
+        bbStrategies.add(new BBStaticThresholdStrategy(15.0));
 
         //going to have BBs.size()+1 rows, and strategies.size()+1 columns
         List<String> outputRows = new ArrayList<>();
 
         String headerRow = "BB,VotingWeight";
-        for (BBSelectionStrategy strategy: strategies) {
+        for (BBSelectionStrategy strategy: bbStrategies) {
             headerRow += "," + strategy.getName();
         }
         outputRows.add(headerRow);
@@ -225,7 +224,7 @@ public class FCMain {
         }
 
         boolean doPrint = false;
-        for (BBSelectionStrategy strategy: strategies) {
+        for (BBSelectionStrategy strategy: bbStrategies) {
             int[] selectedBBs = strategy.selectBuildingBlocks(BBs,BBVotingWeightStats,doPrint);
             //go down the output rows and append binary value for that BB
             for (int i = 0; i < selectedBBs.length; ++i) {
@@ -355,12 +354,16 @@ public class FCMain {
             for (double utilLevel: utilLevels) {
                 System.out.println(objective +" "+utilLevel);
                 for (int seed = 0; seed < 30; ++seed) {
-                    runFeatureConstruction(utilLevel, objective, seed,
-                            RuleType.SEQUENCING, "/out/subtree_contributions/", false);
-                    runFeatureConstruction(utilLevel, objective, seed,
-                            RuleType.SEQUENCING, "/out/subtree_contributions_filtered/", true);
+//                    runFeatureConstruction(utilLevel, objective, seed,
+//                            RuleType.SEQUENCING, "/out/subtree_contributions/", false);
+//                    runFeatureConstruction(utilLevel, objective, seed,
+//                            RuleType.SEQUENCING, "/out/subtree_contributions_filtered/", true);
                     //addClusterInfomation(utilLevel, objective, seed, RuleType.SEQUENCING);
-                    //addBBSelectionFile(utilLevel,objective,seed,RuleType.SEQUENCING);
+                    addBBSelectionFile(utilLevel,
+                            objective,
+                            seed,
+                            RuleType.SEQUENCING,
+                            "/out/subtree_contributions_filtered/");
                     //removeTotalVotingWeight(utilLevel,objective,seed,RuleType.SEQUENCING);
                 }
             }
