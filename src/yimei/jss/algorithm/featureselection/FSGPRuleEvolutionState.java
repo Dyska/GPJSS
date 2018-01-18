@@ -7,6 +7,8 @@ import ec.gp.GPNode;
 import ec.util.Checkpoint;
 import ec.util.Parameter;
 import yimei.jss.niching.ClearingEvaluator;
+import yimei.jss.niching.ClearingKozaFitness;
+import yimei.jss.niching.ClearingMultiObjectiveFitness;
 import yimei.jss.surrogate.Surrogate;
 import yimei.jss.feature.FeatureIgnorable;
 import yimei.jss.feature.FeatureUtil;
@@ -77,7 +79,18 @@ public class FSGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 List<GPIndividual> selIndis =
                         FeatureUtil.selectDiverseIndis(this, individuals, i, 30);
 
-                fitUB = selIndis.get(0).fitness.fitness();
+                if (individuals[0].fitness instanceof ClearingMultiObjectiveFitness) {
+                    //expecting normalised fitness, this is required unfortunately
+                    //these fitUB and fitLB values are meant to be ClearingKozaFitness values
+                    //this returns fitness() as 1/(1+fitness()), so must change values
+                    //this list of selIndis is currently sorted by fitness(), which means it is
+                    //in the reverse order - so must get last member of list
+                    fitUB = 1/(1+selIndis.get(selIndis.size()-1).fitness.fitness());
+                } else if (individuals[0].fitness instanceof ClearingKozaFitness){
+                    fitUB = selIndis.get(0).fitness.fitness();
+                } else {
+                    System.out.println("What's going on here...");
+                }
                 fitLB = 1 - fitUB;
 
                 GPNode[] selFeatures =

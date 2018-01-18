@@ -8,10 +8,10 @@ import java.util.List;
 /**
  * Created by dyska on 13/01/18.
  */
-public class KHighestStrategy implements BBSelectionStrategy {
+public class TopKStrategy implements BBSelectionStrategy {
     private int k;
 
-    public KHighestStrategy(int k) {
+    public TopKStrategy(int k) {
         this.k = k;
     }
 
@@ -58,7 +58,12 @@ public class KHighestStrategy implements BBSelectionStrategy {
 
         for (int i = 0; i < BBVotingWeightStats.size(); ++i) {
             double score = BBVotingWeightStats.get(i);
-            buildingBlocks.add(new BuildingBlock(BBs.get(i),score,i));
+            //no point including building block if score is not positive
+            //as even if it is selected, will be useless
+            //this means there are at most k building blocks selected
+            if (score > 0.0) {
+                buildingBlocks.add(new BuildingBlock(BBs.get(i),score,i));
+            }
         }
 
         //sort by the score - should be highest first
@@ -84,9 +89,7 @@ public class KHighestStrategy implements BBSelectionStrategy {
     }
 
     @Override
-    public String getName() {
-        return k+"-highest";
-    }
+    public String getName() { return "top-"+k; }
 
     //Wrapper class which simplifies this whole process a lot
     private class BuildingBlock {

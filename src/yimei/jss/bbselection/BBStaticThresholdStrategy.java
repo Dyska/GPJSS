@@ -8,10 +8,10 @@ import java.util.List;
 /**
  * Created by dyska on 13/01/18.
  */
-public class StaticThresholdStrategy implements BBSelectionStrategy {
+public class BBStaticThresholdStrategy implements BBSelectionStrategy {
     private double threshold;
 
-    public StaticThresholdStrategy(double threshold) {
+    public BBStaticThresholdStrategy(double threshold) {
         this.threshold = threshold;
     }
 

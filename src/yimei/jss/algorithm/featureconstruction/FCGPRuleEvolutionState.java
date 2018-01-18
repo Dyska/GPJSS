@@ -35,6 +35,7 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
     private int preGenerations;
     private double fracElites;
     private double fracAdapted;
+
     private double fitUB = Double.NEGATIVE_INFINITY;
     private double fitLB = Double.POSITIVE_INFINITY;
 
@@ -76,15 +77,22 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 List<GPIndividual> selIndis =
                         FeatureUtil.selectDiverseIndis(this, individuals, i, 30);
 
-                fitUB = selIndis.get(0).fitness.fitness();
+                //these fitUB and fitLB values are meant to be ClearingKozaFitness values
+                //this returns fitness() as 1/(1+fitness()), so must change values
+                //this list of selIndis is currently sorted by fitness(), which means it is
+                //in the reverse order - so must get last member of list
+
+                fitUB = 1/(1+selIndis.get(selIndis.size()-1).fitness.fitness());
                 fitLB = 1 - fitUB;
 
                 System.out.println("");
                 System.out.println("Feature construction analysis being performed for "
                         +FeatureUtil.ruleTypes[i]+" population.");
+
+                boolean preFiltering = true;
                 List<GPNode> constructedFeatures =
                         FeatureUtil.featureConstruction(this, selIndis,
-                                FeatureUtil.ruleTypes[i], fitUB, fitLB);
+                                FeatureUtil.ruleTypes[i], fitUB, fitLB, preFiltering);
 
                 //for now, just going to output selected individuals instead
                 //record tree structure and fitness

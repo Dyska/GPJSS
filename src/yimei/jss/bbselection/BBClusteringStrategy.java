@@ -8,15 +8,16 @@ import net.sf.javaml.core.DenseInstance;
 import net.sf.javaml.core.Instance;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Created by dyska on 13/01/18.
  */
-public class ClusteringStrategy implements BBSelectionStrategy {
+public class BBClusteringStrategy implements BBSelectionStrategy {
     int numClusters;
 
-    public ClusteringStrategy(int k) {
+    public BBClusteringStrategy(int k) {
         this.numClusters = k;
     }
 
@@ -77,20 +78,34 @@ public class ClusteringStrategy implements BBSelectionStrategy {
     @Override
     public int[] selectBuildingBlocks(List<String> BBs, List<Double> BBVotingWeightStats, boolean verbose) {
         int[] selectedBBs = new int[BBs.size()];
+        int numClusters = this.numClusters;
 
         //Have a selection of building blocks, each with a voting score
         //Want to create k clusters, and select all BBs which fall in the top cluster
 
         Dataset data = new DefaultDataset();
         int startIndex = -1;
+        List<Double> uniqueScores = new ArrayList();
 
         for (int i = 0; i < BBVotingWeightStats.size(); ++i) {
             double[] score = new double[] {BBVotingWeightStats.get(i)};
+            if (!uniqueScores.contains(score[0])) {
+                uniqueScores.add(score[0]);
+            }
             Instance d = new DenseInstance(score);
             if (data.isEmpty()) {
                 startIndex = d.getID();
             }
             data.add(d);
+        }
+        int numUniqueScores = uniqueScores.size();
+
+        if (numUniqueScores+1 < numClusters) {
+            //if we have 10 items, 9 of which are 0.0 and 1 is 1.0
+            //then trying to break it into 3 clusters will not work (below will run indefinitely)
+            //doing this is a bit hacky, but works for our purposes
+            System.out.println("Reducing num clusters to "+(numUniqueScores+1)+" for this run.");
+            numClusters = numUniqueScores+1;
         }
 
         KMeans km = new KMeans(numClusters);

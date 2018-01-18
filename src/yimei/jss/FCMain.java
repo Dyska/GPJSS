@@ -2,23 +2,21 @@ package yimei.jss;
 
 import ec.Evolve;
 import ec.gp.GPIndividual;
-import ec.gp.GPNode;
 import ec.gp.GPTree;
 import ec.util.ParameterDatabase;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import yimei.jss.algorithm.featureconstruction.FCGPRuleEvolutionState;
 import yimei.jss.bbselection.*;
 import yimei.jss.feature.FeatureUtil;
-import yimei.jss.gp.terminal.AttributeGPNode;
-import yimei.jss.gp.terminal.BuildingBlock;
-import yimei.jss.gp.terminal.JobShopAttribute;
 import yimei.jss.niching.ClearingMultiObjectiveFitness;
 import yimei.jss.rule.RuleType;
 import yimei.jss.rule.operation.evolved.GPRule;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 
 import static ec.Evolve.loadParameterDatabase;
@@ -32,10 +30,10 @@ import static ec.Evolve.loadParameterDatabase;
 public class FCMain {
 
     static String diverseIndisDir = "/data/diverse_individuals/";
-    static String contributionsDir = "/out/subtree_contributions/";
+    //static String contributionsDir = "/out/subtree_contributions/";
 
     public static void runFeatureConstruction(double utilLevel, String objective,
-                                              int seed, RuleType ruleType) {
+                                              int seed, RuleType ruleType, String outputDir, boolean filtering) {
         List<GPIndividual> selIndis = readInSelectedIndividuals(utilLevel, objective, seed, ruleType);
 
         FCGPRuleEvolutionState state = initState(utilLevel, objective, seed);
@@ -44,23 +42,22 @@ public class FCMain {
             FeatureUtil.initFitness(state, indi, ruleType);
         }
 
-        //should reorder individuals - lowest fitness first
-        //and update fitUB and fitLB
+        //should reorder individuals - highest fitness first
         Collections.sort(selIndis, (o1, o2) -> {
-            if (o1.fitness.fitness() > o2.fitness.fitness()) {
+            if (o1.fitness.fitness() < o2.fitness.fitness()) {
                 return 1;
-            } else if (o1.fitness.fitness() < o2.fitness.fitness()) {
+            } else if (o1.fitness.fitness() > o2.fitness.fitness()) {
                 return -1;
             } else {
                 return 0;
             }
         });
-        double fitUB = selIndis.get(0).fitness.fitness();
+        double fitUB = 1/(1+selIndis.get(0).fitness.fitness());
         double fitLB = 1 - fitUB;
 
         System.out.println("");
         System.out.println("Feature construction analysis being performed for " + ruleType + " population.");
-        FeatureUtil.featureConstruction(state, selIndis, ruleType, fitUB, fitLB);
+        FeatureUtil.featureConstruction(state, selIndis, ruleType, fitUB, fitLB, filtering);
     }
 
     private static double getTotalVotingWeight(double utilLevel, String objective,
@@ -73,21 +70,23 @@ public class FCMain {
             FeatureUtil.initFitness(state, indi, ruleType);
         }
 
-        //should reorder individuals - lowest fitness first
-        //and update fitUB and fitLB
+        //should reorder individuals - highest fitness first
         Collections.sort(selIndis, (o1, o2) -> {
-            if (o1.fitness.fitness() > o2.fitness.fitness()) {
+            if (o1.fitness.fitness() < o2.fitness.fitness()) {
                 return 1;
-            } else if (o1.fitness.fitness() < o2.fitness.fitness()) {
+            } else if (o1.fitness.fitness() > o2.fitness.fitness()) {
                 return -1;
             } else {
                 return 0;
             }
         });
-        double fitUB = selIndis.get(0).fitness.fitness();
+
+        double fitUB = 1/(1+selIndis.get(0).fitness.fitness());
         double fitLB = 1 - fitUB;
 
-        return FeatureUtil.getTotalVotingWeight(selIndis, ruleType, fitUB, fitLB);
+        DescriptiveStatistics stat = FeatureUtil.initVotingWeightStat(selIndis, fitUB, fitLB);
+
+        return stat.getSum();
     }
 
     public static FCGPRuleEvolutionState initState(double utilLevel, String objective, int seed) {
@@ -165,17 +164,22 @@ public class FCMain {
      * containing information about which cluster a contribution was added to.
      * This method sho
      */
-    public static void addClusterInfomation(double utilLevel, String objective, int seed, RuleType ruleType) {
+    public static void addClusterInfomation(double utilLevel, String objective,
+                                            int seed, RuleType ruleType,
+                                            String outputDir, int k) {
         String directory = (new File("")).getAbsolutePath();
-        directory += contributionsDir+utilLevel+"-"+objective+"/";
+        directory += outputDir+utilLevel+"-"+objective+"/";
         directory += "job."+seed+" - "+ruleType+".fcinfo.csv";
         File file = new File(directory);
-        FeatureUtil.addClusterColumn(file);
+
+        FeatureUtil.addClusterColumn(file, k);
     }
 
-    public static void addBBSelectionFile(double utilLevel, String objective, int seed, RuleType ruleType) {
+    public static void addBBSelectionFile(double utilLevel, String objective,
+                                          int seed, RuleType ruleType,
+                                          String outputDir) {
         String directory = (new File("")).getAbsolutePath();
-        directory += contributionsDir+utilLevel+"-"+objective+"/";
+        directory += outputDir+utilLevel+"-"+objective+"/";
         directory += "job."+seed+" - "+ruleType;
 
         File fcFile = new File(directory+".fcinfo.csv");
@@ -196,16 +200,16 @@ public class FCMain {
 
         //create our list of strategies
         List<BBSelectionStrategy> strategies = new ArrayList<>();
-        strategies.add(new KHighestStrategy(2));
-        strategies.add(new KHighestStrategy(3));
-        strategies.add(new ClusteringStrategy(2));
-        strategies.add(new ClusteringStrategy(3));
+        strategies.add(new TopKStrategy(2));
+        strategies.add(new TopKStrategy(3));
+        strategies.add(new BBClusteringStrategy(2));
+        strategies.add(new BBClusteringStrategy(3));
         strategies.add( new StaticProportionTotalVotingWeight(totalVotingWeight, 0.25));
         strategies.add(new StaticProportionTotalVotingWeight(totalVotingWeight, 0.50));
         strategies.add(new StaticProportionTotalVotingWeight(totalVotingWeight, 0.75));
-        strategies.add(new StaticThresholdStrategy(5.0));
-        strategies.add(new StaticThresholdStrategy(10.0));
-        strategies.add(new StaticThresholdStrategy(15.0));
+        strategies.add(new BBStaticThresholdStrategy(5.0));
+        strategies.add(new BBStaticThresholdStrategy(10.0));
+        strategies.add(new BBStaticThresholdStrategy(15.0));
 
         //going to have BBs.size()+1 rows, and strategies.size()+1 columns
         List<String> outputRows = new ArrayList<>();
@@ -308,16 +312,56 @@ public class FCMain {
         }
     }
 
+    private static void removeTotalVotingWeight(double utilLevel, String objective,
+                                                int seed, RuleType ruleType, String outputDir) {
+        String directory = (new File("")).getAbsolutePath();
+        directory += outputDir+utilLevel+"-"+objective+"/";
+        directory += "job."+seed+" - "+ruleType;
+
+        File bbsFile = new File(directory+".bbs.csv");
+
+        final BufferedReader br;
+
+        try {
+            br = new BufferedReader(new FileReader(bbsFile));
+            String sCurrentLine;
+            List<String> newLines = new ArrayList<>();
+            for (String line : Files.readAllLines(Paths.get(bbsFile.getAbsolutePath()), StandardCharsets.UTF_8)) {
+                if (line.contains(",")) {
+                    newLines.add(line);
+                } else {
+                    //else this will be the total voting weight, which is being removed
+                    System.out.println(bbsFile);
+                    System.out.println("Removing line: "+line);
+                }
+            }
+            Files.write(Paths.get(bbsFile.getAbsolutePath()), newLines, StandardCharsets.UTF_8);
+            br.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) {
         String[] objectives = new String[] {"max-flowtime","mean-flowtime","mean-weighted-flowtime"};
         double[] utilLevels = new double[] {0.85, 0.95};
+        //String outputDir = "/out/subtree_contributions/";
+        //String outputDirFiltered = "/out/subtree_contributions_filtered/";
+        //boolean preFiltering = false;
 
         for (String objective: objectives) {
             for (double utilLevel: utilLevels) {
+                System.out.println(objective +" "+utilLevel);
                 for (int seed = 0; seed < 30; ++seed) {
-                    //runFeatureConstruction(utilLevel, objective, seed, RuleType.SEQUENCING);
+                    runFeatureConstruction(utilLevel, objective, seed,
+                            RuleType.SEQUENCING, "/out/subtree_contributions/", false);
+                    runFeatureConstruction(utilLevel, objective, seed,
+                            RuleType.SEQUENCING, "/out/subtree_contributions_filtered/", true);
                     //addClusterInfomation(utilLevel, objective, seed, RuleType.SEQUENCING);
-                    addBBSelectionFile(utilLevel,objective,seed,RuleType.SEQUENCING);
+                    //addBBSelectionFile(utilLevel,objective,seed,RuleType.SEQUENCING);
+                    //removeTotalVotingWeight(utilLevel,objective,seed,RuleType.SEQUENCING);
                 }
             }
         }
