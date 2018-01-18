@@ -14,6 +14,7 @@ import net.sf.javaml.core.DenseInstance;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import yimei.jss.bbselection.BBSelectionStrategy;
 import yimei.jss.bbselection.BBStaticThresholdStrategy;
+import yimei.jss.bbselection.StaticProportionTotalVotingWeight;
 import yimei.jss.contributionselection.ContributionClusteringStrategy;
 import yimei.jss.contributionselection.ContributionSelectionStrategy;
 import yimei.jss.contributionselection.ContributionStaticThresholdStrategy;
@@ -23,10 +24,7 @@ import yimei.jss.gp.GPRuleEvolutionState;
 import yimei.jss.gp.TerminalsChangable;
 import yimei.jss.gp.function.Div;
 import yimei.jss.gp.function.Mul;
-import yimei.jss.gp.terminal.AttributeGPNode;
-import yimei.jss.gp.terminal.BuildingBlock;
-import yimei.jss.gp.terminal.ConstantTerminal;
-import yimei.jss.gp.terminal.JobShopAttribute;
+import yimei.jss.gp.terminal.*;
 import yimei.jss.jobshop.Objective;
 import yimei.jss.niching.*;
 import yimei.jss.rule.RuleType;
@@ -444,6 +442,13 @@ public class FeatureUtil {
             BBs = prefilterBBs(BBs);
         }
 
+        //String outputPath = initPath(state,false);
+
+        if (BBs.isEmpty()) {
+            System.out.println("Exiting early, no remaining building blocks.");
+            return new ArrayList<GPNode>(); //no building blocks remain to select
+        }
+
         List<DescriptiveStatistics> BBContributionStats = new ArrayList<>();
         List<DescriptiveStatistics> BBVotingWeightStats = new ArrayList<>();
 
@@ -469,8 +474,8 @@ public class FeatureUtil {
         contributionStrategy.selectContributions(contributions,selIndis,BBs,BBVotingWeightStats, votingWeightStat);
 
         long jobSeed = ((GPRuleEvolutionState)state).getJobSeed();
-        String outputPath = initPath(state, preFiltering);
-        File BBInfoFile = new File(outputPath + "job." + jobSeed +
+        //String outputPath = initPath(state, preFiltering);
+        File BBInfoFile = new File("job." + jobSeed +
                 " - "+ ruleType.name() + ".fcinfo.csv");
 
         writeContributions(BBInfoFile,BBs,selIndis,BBContributionStats,BBVotingWeightStats,votingWeightStat);
@@ -480,11 +485,18 @@ public class FeatureUtil {
         List<GPNode> selBBs = new LinkedList<>();
         List<Double> selBBsVotingWeights = new LinkedList<>();
 
+        //ugly, sorry
+        //total voting weight will not be known if we are running the whole process from scratch (ie generating
+        //diverse set of individuals, not reading them in from a file)
+        if (bbStrategy instanceof StaticProportionTotalVotingWeight) {
+            ((StaticProportionTotalVotingWeight) bbStrategy).setTotalVotingWeight(votingWeightStat.getSum());
+        }
+
         //update these empty lists with results
         bbStrategy.selectBuildingBlocks(BBs,selBBs,BBVotingWeightStats,selBBsVotingWeights);
 
         //write to file
-        File fcFile = new File(outputPath + "job." + jobSeed + " - "+ ruleType.name() + ".bbs.csv");
+        File fcFile = new File("job." + jobSeed + " - "+ ruleType.name() + ".bbs.csv");
         writeBBs(fcFile, selBBs, selBBsVotingWeights);
 
         return selBBs;
@@ -721,8 +733,20 @@ public class FeatureUtil {
                 //operator should be add, sub, max or min
                 //dimensions of attributes should therefore be equal for this to make sense
                 //expecting subtrees of depth 2, so children will be terminals
-                JobShopAttribute js1 = ((AttributeGPNode) node.children[0]).getJobShopAttribute();
-                JobShopAttribute js2 = ((AttributeGPNode) node.children[1]).getJobShopAttribute();
+                JobShopAttribute js1;
+                JobShopAttribute js2;
+
+                if (node.children[0] instanceof TerminalERCUniform) {
+                    js1 = ((AttributeGPNode) ((TerminalERCUniform) node.children[0]).getTerminal()).getJobShopAttribute();
+                } else {
+                    js1 = ((AttributeGPNode) node.children[0]).getJobShopAttribute();
+                }
+
+                if (node.children[1] instanceof TerminalERCUniform) {
+                    js2 = ((AttributeGPNode) ((TerminalERCUniform) node.children[1]).getTerminal()).getJobShopAttribute();
+                } else {
+                    js2 = ((AttributeGPNode) node.children[1]).getJobShopAttribute();
+                }
                 if (js1.dimension() == js2.dimension()) {
                     filteredBBs.add(node);
                 } else {
@@ -888,6 +912,8 @@ public class FeatureUtil {
 //            outputPath += "static/";
 //        }
 //        return outputPath;
+        String workingDirectory = (new File("")).getAbsolutePath();
+
         SimpleEvaluationModel evaluationModel = (SimpleEvaluationModel) ((RuleOptimizationProblem)
                 state.evaluator.p_problem).getEvaluationModel();
         Objective objective = evaluationModel.getObjectives().get(0); //expecting only one objective
@@ -897,6 +923,6 @@ public class FeatureUtil {
         if (preFiltering) {
             path = "out/subtree_contributions_filtered/";
         }
-        return path+utilLevel+"-"+objective.getName().toLowerCase()+"/";
+        return workingDirectory+"/"+path+utilLevel+"-"+objective.getName().toLowerCase()+"/";
     }
 }

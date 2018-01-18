@@ -20,13 +20,14 @@ public abstract class ContributionSelectionStrategy {
     public abstract String getName();
 
     public static ContributionSelectionStrategy selectStrategy(String name) {
-        if (name.startsWith("Score>")) {
+        name = name.toLowerCase();
+        if (name.startsWith("score-")) {
             //ContributionStaticThreshold
-            double threshold = Double.parseDouble(name.substring("Score>".length()));
+            double threshold = Double.parseDouble(name.substring("score-".length()));
             return new ContributionStaticThresholdStrategy(threshold);
-        } else if (name.endsWith("-Clustering")) {
+        } else if (name.endsWith("-clustering")) {
             //ContributionClusteringStrategy
-            int k = Integer.parseInt(name.substring(0,name.length()-"-Clustering".length()));
+            int k = Integer.parseInt(name.substring(0,name.length()-"-clustering".length()));
             return new ContributionClusteringStrategy(k);
         }
 

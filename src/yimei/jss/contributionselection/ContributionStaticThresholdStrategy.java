@@ -38,6 +38,6 @@ public class ContributionStaticThresholdStrategy extends ContributionSelectionSt
 
     @Override
     public String getName() {
-        return "Score>"+String.valueOf(threshold);
+        return "Score-"+String.valueOf(threshold);
     }
 }

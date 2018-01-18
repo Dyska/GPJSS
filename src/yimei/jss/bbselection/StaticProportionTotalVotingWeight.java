@@ -12,6 +12,10 @@ public class StaticProportionTotalVotingWeight extends BBSelectionStrategy {
     private double totalVotingWeight;
     private double proportion;
 
+    public StaticProportionTotalVotingWeight(double proportion) {
+        this.proportion = proportion;
+    }
+
     public StaticProportionTotalVotingWeight(double totalVotingWeight, double proportion) {
         this.totalVotingWeight = totalVotingWeight;
         this.proportion = proportion;
@@ -51,6 +55,8 @@ public class StaticProportionTotalVotingWeight extends BBSelectionStrategy {
 
     @Override
     public String getName() {
-        return "BB>"+proportion+"*"+totalVotingWeight;
+        return "BB-"+proportion+"x"+totalVotingWeight;
     }
+
+    public void setTotalVotingWeight(double totalVotingWeight) {this.totalVotingWeight = totalVotingWeight; }
 }

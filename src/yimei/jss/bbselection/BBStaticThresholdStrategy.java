@@ -48,6 +48,6 @@ public class BBStaticThresholdStrategy extends BBSelectionStrategy {
 
     @Override
     public String getName() {
-        return "Score>"+String.valueOf(threshold);
+        return "Score-"+String.valueOf(threshold);
     }
 }

@@ -17,20 +17,29 @@ public abstract class BBSelectionStrategy {
     public abstract String getName();
 
     public static BBSelectionStrategy selectStrategy(String name) {
-        if (name.startsWith("Score>")) {
+        name = name.toLowerCase();
+        if (name.startsWith("score-")) {
             //"Score>"+String.valueOf(threshold);
-            double threshold = Double.parseDouble(name.substring("Score>".length()));
+            double threshold = Double.parseDouble(name.substring("score-".length()));
             return new BBStaticThresholdStrategy(threshold);
-        } else if (name.endsWith("-Clustering")) {
+        } else if (name.endsWith("-clustering")) {
             //numClusters+"-Clustering";
-            int k = Integer.parseInt(name.substring(0,name.length()-"-Clustering".length()));
+            int k = Integer.parseInt(name.substring(0,name.length()-"-clustering".length()));
             return new BBClusteringStrategy(k);
-        } else if (name.startsWith("BB") && name.contains("*")) {
+        } else if (name.startsWith("bb-") && name.contains("x")) {
             //"BB>"+proportion+"*"+totalVotingWeight;
-            int multIndex = name.indexOf('*');
-            double proportion = Double.parseDouble(name.substring("BB>".length(),multIndex));
-            double totalVotingWeight = Double.parseDouble(name.substring(multIndex+1));
-            return new StaticProportionTotalVotingWeight(totalVotingWeight,proportion);
+            //This is a tricky one... - totalVotingWeight may have been set, or not
+            //Will try parse the total voting weight, but if it fails, will catch the exception and
+            //use other constructor
+            int multIndex = name.indexOf('x');
+            double proportion = Double.parseDouble(name.substring("bb-".length(),multIndex));
+
+            try {
+                double totalVotingWeight = Double.parseDouble(name.substring(multIndex+1));
+                return new StaticProportionTotalVotingWeight(totalVotingWeight,proportion);
+            } catch (NumberFormatException n) {
+                return new StaticProportionTotalVotingWeight(proportion);
+            }
         } else if (name.startsWith("top-")) {
             //"top-"+k;
             int k = Integer.parseInt(name.substring("top-".length()));
