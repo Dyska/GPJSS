@@ -110,7 +110,8 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                         +FeatureUtil.ruleTypes[i]+" population.");
 
                 String bbSelectionStrategy = parameters.getString(new Parameter("bbSelectionStrategy"),null);
-                String contributionSelectionStrategy = parameters.getString(new Parameter("contributionSelectionStrategy"),null);
+                String contributionSelectionStrategy = parameters.getString(
+                        new Parameter("contributionSelectionStrategy"),null);
 
                 boolean preFiltering = true;
                 FeatureUtil.featureConstruction(this, selIndis,

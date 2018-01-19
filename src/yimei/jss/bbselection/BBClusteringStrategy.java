@@ -41,22 +41,8 @@ public class BBClusteringStrategy extends BBSelectionStrategy {
             data.add(d);
         }
 
-        KMeans km = new KMeans(numClusters);
+        KMeans km = new KMeans(numClusters,100);
         Dataset[] clusters = km.cluster(data);
-
-//        for (int i = 0; i < clusters.length; ++i) {
-//            Dataset d = clusters[i];
-//            d.sort((o1, o2) -> {
-//                if (o1.get(0) > o2.get(0)) {
-//                    return 1;
-//                } else if (o1.get(0) < o2.get(0)){
-//                    return -1;
-//                }
-//                return 0;
-//            });
-//            System.out.println("Cluster "+(i+1)+" has "+d.size()+
-//                    " values, ranging from "+d.get(0)+" to "+d.get(d.size()-1));
-//        }
 
         int bestClusterIndex = findBestCluster(clusters);
         Dataset bestCluster = clusters[bestClusterIndex];
@@ -110,20 +96,6 @@ public class BBClusteringStrategy extends BBSelectionStrategy {
 
         KMeans km = new KMeans(numClusters);
         Dataset[] clusters = km.cluster(data);
-
-//        for (int i = 0; i < clusters.length; ++i) {
-//            Dataset d = clusters[i];
-//            d.sort((o1, o2) -> {
-//                if (o1.get(0) > o2.get(0)) {
-//                    return 1;
-//                } else if (o1.get(0) < o2.get(0)){
-//                    return -1;
-//                }
-//                return 0;
-//            });
-//            System.out.println("Cluster "+(i+1)+" has "+d.size()+
-//                    " values, ranging from "+d.get(0)+" to "+d.get(d.size()-1));
-//        }
 
         int bestClusterIndex = findBestCluster(clusters);
         Dataset bestCluster = clusters[bestClusterIndex];

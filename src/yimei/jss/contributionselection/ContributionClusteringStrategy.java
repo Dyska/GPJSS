@@ -75,8 +75,8 @@ public class ContributionClusteringStrategy extends ContributionSelectionStrateg
                     if (!inWorstCluster) {
                         //should get to vote!
                         BBVotingWeightStats.get(i).addValue(votingWeightStat.getElement(s));
-                        //System.out.println("Rule "+s+" voted for building block "+i+
-                        //" with weight "+votingWeightStat.getElement(s)+".");
+                        System.out.println("Rule "+s+" voted for building block "+i+
+                        " with weight "+votingWeightStat.getElement(s)+".");
                     }
                 }
             }
