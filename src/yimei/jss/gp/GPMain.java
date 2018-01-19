@@ -29,7 +29,7 @@ public class GPMain {
             double utilLevel = 0.85;
             String objective = "mean-flowtime";
             String contributionSelectionStrategy = "2-Clustering";
-            String bbSelectionStrategy = "BB>0.25*totalVotingWeight";
+            String bbSelectionStrategy = "BB-0.25xTVW";
 
             gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/featureconstruction/fcgp-simplegp-dynamic.params");
             //gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp-dynamic.params");
