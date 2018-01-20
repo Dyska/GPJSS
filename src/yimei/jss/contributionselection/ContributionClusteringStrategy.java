@@ -1,17 +1,11 @@
 package yimei.jss.contributionselection;
 
-import ec.app.edge.func.Double;
 import ec.gp.GPIndividual;
 import ec.gp.GPNode;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-
-import java.util.ArrayList;
 import java.util.List;
-import static yimei.jss.feature.FeatureUtil.clusterContributions;
-import static yimei.jss.feature.FeatureUtil.findWorstCluster;
 import weka.clusterers.SimpleKMeans;
 import weka.core.*;
-
 
 /**
  * Created by dyska on 18/01/18.
@@ -37,84 +31,52 @@ public class ContributionClusteringStrategy extends ContributionSelectionStrateg
         options[1] = "100";
         options[2] = "-O"; //preserve order of instances
         options[3] = "-N";
-        options[4] = String.valueOf(numClusters); //set number of clusters
+        options[4] = String.valueOf(numClusters);
 
-        SimpleKMeans clusterer = new SimpleKMeans();   // new instance of clusterer
+        SimpleKMeans clusterer = new SimpleKMeans();
         try {
-            clusterer.setOptions(options);     // set the options
+            clusterer.setOptions(options);
             clusterer.buildClusterer(data);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        int getWorstIndex = getWorstClusterIndex(clusterer);
+        int worstClusterIndex = getWorstClusterIndex(clusterer);
 
-//
-//
-////        Dataset data = new DefaultDataset();
-//        //Instances data = new Instances();
-//        List<Instance> instances = new ArrayList<>();
-//        int[][] instanceIDs = new int[selIndis.size()][BBs.size()];
-////
-//        for (int s = 0; s < selIndis.size(); s++) {
-//            for (int i = 0; i < BBs.size(); i++) {
-//                double c = contributions[s][i];
-//
-//                //we have |selIndis| * |BB| individuals
-//                //want to cluster them, and assign them either large or small
-//                //need to create instances to add to dataset
-//                if (c > 0.0) {
-//                    //no point including contribution if it has less than 0
-//                    Instance instance = new SparseInstance(1);
-//                    instance.setValue(0,c);
-//                    instances.add(instance);
-//                    instanceIDs[s][i] = 1;
-//                } else {
-//                    instanceIDs[s][i] = 0; //didn't get included
-//                }
-//            }
-//        }
-//
-//        Dataset[] clusters = clusterContributions(data, numClusters);
-//        int worstClusterIndex = findWorstCluster(clusters);
-//
-//        //clustering complete, now need to find which cluster has the worst values
-//        //as this is the cluster which will have its contributions excluded
-//
+        //clustering complete, now need to find which cluster has the worst values
+        //as this is the cluster which will have its contributions excluded
         for (int s = 0; s < selIndis.size(); s++) {
             for (int i = 0; i < BBs.size(); i++) {
                 int instanceID = instanceIDs[s][i];
                 if (instanceID == 0) {
                     //wasn't clustered, must have been non-positive contribution
                     BBVotingWeightStats.get(i).addValue(0);
-                    //System.out.println("Contribution of subtree "+i+" to rule "+s+" was non-positive.");
+                    //System.out.println("Contribution of subtree "+i+" to rule "+s+" was non-positive ("+(contributions[s][i]+")."));
+
                 } else {
-                    boolean inWorstCluster = false;
-                    int cluster = -1;
+                    int clusterIndex = -1;
                     try {
-                        cluster = clusterer.getAssignments()[instanceID-1];
+                        clusterIndex = clusterer.getAssignments()[instanceID-1];
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    System.out.println("Cluster for "+instanceID+" = "+cluster);
-//                    //was clustered, now we just need to know whether it was in bottom cluster or not
-//                    Dataset worstCluster = clusters[worstClusterIndex];
-//                    for (int j = 0; j < worstCluster.size() && !inWorstCluster; ++j) {
-//                        if (worstCluster.get(j).getID() == instanceID) {
-//                            inWorstCluster = true;
-//                            BBVotingWeightStats.get(i).addValue(0);
-//                        }
-//                    }
-//                    if (!inWorstCluster) {
-//                        //should get to vote!
-//                        BBVotingWeightStats.get(i).addValue(votingWeightStat.getElement(s));
-//                        System.out.println("Rule "+s+" voted for building block "+i+
-//                        " with weight "+votingWeightStat.getElement(s)+".");
-//                    }
+                    if (clusterIndex == -1) {
+                        System.out.println("Clusterer couldn't find instance...");
+                    }
+                    if (clusterIndex == worstClusterIndex) {
+                        //contribution was in bottom cluster
+                        //System.out.println("Contribution of "+contributions[s][i]+" was positive, but was in the lowest cluster - index = "+clusterIndex);
+                        BBVotingWeightStats.get(i).addValue(0);
+                    } else {
+                        //should get to vote!
+                        BBVotingWeightStats.get(i).addValue(votingWeightStat.getElement(s));
+                        //System.out.println("Contribution of "+contributions[s][i]+" was in cluster "+clusterIndex+" (not worst).");
+                        System.out.println("Rule "+s+" voted for building block "+i+
+                        " with weight "+votingWeightStat.getElement(s)+".");
+                    }
                 }
             }
         }
-        System.out.println();
     }
 
     @Override
@@ -175,13 +137,14 @@ public class ContributionClusteringStrategy extends ContributionSelectionStrateg
         Instances centroids = clusterer.getClusterCentroids();
         //expecting numClusters
         for (int i = 0; i < centroids.numInstances(); ++i) {
-            Attribute a = centroids.instance(i).attribute(0);
-            //a.
-            //if ((doub< lowestCentroidValue) {
-
-            //}
+            double centroidVal = centroids.instance(i).value(0);
+            if (centroidVal < lowestCentroidValue) {
+                worstClusterIndex = i;
+                lowestCentroidValue = centroidVal;
+            }
+            //System.out.println("Cluster "+i+" had centroid value of: "+centroidVal);
         }
-
-        return 0;
+        //System.out.println("Lowest cluster "+worstClusterIndex+" with value of: "+lowestCentroidValue);
+        return worstClusterIndex;
     }
 }

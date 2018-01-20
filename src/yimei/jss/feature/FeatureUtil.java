@@ -445,7 +445,7 @@ public class FeatureUtil {
 
         if (BBs.isEmpty()) {
             System.out.println("Exiting early, no remaining building blocks.");
-            return new ArrayList<GPNode>(); //no building blocks remain to select
+            return new ArrayList<>(); //no building blocks remain to select
         }
 
         List<DescriptiveStatistics> BBContributionStats = new ArrayList<>();
@@ -548,145 +548,113 @@ public class FeatureUtil {
         }
     }
 
-    public static Dataset[] clusterContributions(Dataset data, int k) {
-        KMeans km = new KMeans(k);
-        Dataset[] clusters = km.cluster(data);
-
-        for (int i = 0; i < clusters.length; ++i) {
-            Dataset d = clusters[i];
-            d.sort((o1, o2) -> {
-                if (o1.get(0) > o2.get(0)) {
-                    return 1;
-                } else if (o1.get(0) < o2.get(0)){
-                    return -1;
-                }
-                return 0;
-            });
-            System.out.println("Cluster "+(i+1)+" has "+d.size()+
-                    " values, ranging from "+d.get(0)+" to "+d.get(d.size()-1));
-        }
-        return clusters;
-    }
-
-    public static int findWorstCluster(Dataset[] clusters) {
-        //need to find the cluster with the lowest values
-        //clusters will have distinct ranges - any value from a will be lower than any value from b
-        //therefore can pick any member arbitrarily
-        Double lowest = clusters[0].instance(0).get(0);
-        int worstClusterIndex = 0;
-        for (int i = 1; i < clusters.length; ++i) {
-            Double instance = clusters[i].instance(0).get(0);
-            if (instance < lowest) {
-                worstClusterIndex = i;
-                lowest = instance;
-            }
-        }
-        return worstClusterIndex;
-    }
-
     /**
      * This method should read in .fcinfo.csv files, add the contributions
      * from the file into a dataset, perform clustering and then record
      * the clustering information in the original files.
      */
     public static void addClusterColumn(File file, int k) {
-        //should be a .fcinfo.csv file
-        System.out.println(file.getAbsolutePath());
-
-        final BufferedReader br;
-        Dataset data = new DefaultDataset();
-        List<Integer> ids = new ArrayList<>();
-
+//        //should be a .fcinfo.csv file
+//        System.out.println(file.getAbsolutePath());
+//
+//        final BufferedReader br;
+//        Dataset data = new DefaultDataset();
+//        List<Integer> ids = new ArrayList<>();
+//
+//        try {
+//            br = new BufferedReader(new FileReader(file));
+//            String sCurrentLine;
+//            sCurrentLine = br.readLine(); //skip headers
+//            if (sCurrentLine.endsWith("Cluster")) {
+//                if (sCurrentLine.endsWith("Cluster,Cluster")) {
+//
+//                    //messed up, have at least two Cluster columns
+//                    //need to close buffered reader before writing to file, won't need it anymore anyway
+//                    br.close();
+//                    try {
+//                        List<String> newLines = new ArrayList<>();
+//                        for (String line : Files.readAllLines(Paths.get(file.getAbsolutePath()), StandardCharsets.UTF_8)) {
+//                            if (line.contains("BB,Fitness,Contribution,VotingWeights,NormFit,Size")) {
+//                                //replace whatever was there before
+//                                newLines.add("BB,Fitness,Contribution,VotingWeights,NormFit,Size,Cluster");
+//                            } else {
+//                                newLines.add(line);
+//                            }
+//                        }
+//                        Files.write(Paths.get(file.getAbsolutePath()), newLines, StandardCharsets.UTF_8);
+//                    } catch (IOException e) {
+//                        e.printStackTrace();
+//                    }
+//                }
+//                //this file has already had cluster information included, no need to process
+//                return;
+//            }
+//
+//            while ((sCurrentLine = br.readLine()) != null) {
+//                String[] components = sCurrentLine.split(String.valueOf(','));
+//                double[] contribution = new double[]{ Double.parseDouble(components[2]) };
+//                if (contribution[0] > 0.0) {
+//                    DenseInstance i = new DenseInstance(contribution);
+//                    ids.add(i.getID());
+//                    data.add(i);
+//                } else {
+//                    //so we can keep track of which contribution belongs to which row
+//                    ids.add(-1);
+//                }
+//            }
+//            br.close();
+//
+//        } catch (FileNotFoundException e) {
+//            e.printStackTrace();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        //contributions have all been read in, now can cluster them
+//        Dataset[] clusters = clusterContributions(data,k);
+//        int worstClusterIndex = findWorstCluster(clusters);
+//
+//        //now can write back to files - if cluster = worstCluster - write 0, otherwise write 1
+//        List<String> newLines = new ArrayList<>();
+//        int count = 0;
+//        try {
+//            for (String line : Files.readAllLines(Paths.get(file.getAbsolutePath()), StandardCharsets.UTF_8)) {
+//                if (line.contains("BB,Fitness,Contribution,VotingWeights,NormFit,Size")) {
+//                    newLines.add(line+",Cluster");
+//                } else {
+//                    int id = ids.get(count);
+//                    if (id != -1) {
+//                        //was included in cluster
+//                        //need to check which cluster it was in
+//                        boolean inWorstCluster = false;
+//                        //was clustered, now we just need to know whether it was in bottom cluster or not
+//                        Dataset worstCluster = clusters[worstClusterIndex];
+//                        for (int j = 0; j < worstCluster.size() && !inWorstCluster; ++j) {
+//                            if (worstCluster.get(j).getID() == id) {
+//                                inWorstCluster = true;
+//                                newLines.add(line+",0");
+//                            }
+//                        }
+//                        if (!inWorstCluster) {
+//                            //should get to vote!
+//                            newLines.add(line+",1");
+//                        }
+//                    } else {
+//                        //not a valid contribution
+//                        newLines.add(line+",0");
+//                    }
+//                    count++;
+//                }
+//            }
+//            Files.write(Paths.get(file.getAbsolutePath()), newLines, StandardCharsets.UTF_8);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
         try {
-            br = new BufferedReader(new FileReader(file));
-            String sCurrentLine;
-            sCurrentLine = br.readLine(); //skip headers
-            if (sCurrentLine.endsWith("Cluster")) {
-                if (sCurrentLine.endsWith("Cluster,Cluster")) {
-
-                    //messed up, have at least two Cluster columns
-                    //need to close buffered reader before writing to file, won't need it anymore anyway
-                    br.close();
-                    try {
-                        List<String> newLines = new ArrayList<>();
-                        for (String line : Files.readAllLines(Paths.get(file.getAbsolutePath()), StandardCharsets.UTF_8)) {
-                            if (line.contains("BB,Fitness,Contribution,VotingWeights,NormFit,Size")) {
-                                //replace whatever was there before
-                                newLines.add("BB,Fitness,Contribution,VotingWeights,NormFit,Size,Cluster");
-                            } else {
-                                newLines.add(line);
-                            }
-                        }
-                        Files.write(Paths.get(file.getAbsolutePath()), newLines, StandardCharsets.UTF_8);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                //this file has already had cluster information included, no need to process
-                return;
-            }
-
-            while ((sCurrentLine = br.readLine()) != null) {
-                String[] components = sCurrentLine.split(String.valueOf(','));
-                double[] contribution = new double[]{ Double.parseDouble(components[2]) };
-                if (contribution[0] > 0.0) {
-                    DenseInstance i = new DenseInstance(contribution);
-                    ids.add(i.getID());
-                    data.add(i);
-                } else {
-                    //so we can keep track of which contribution belongs to which row
-                    ids.add(-1);
-                }
-            }
-            br.close();
-
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
+            throw new Exception("Method no longer supported");
+        } catch (Exception e) {
             e.printStackTrace();
         }
-
-        //contributions have all been read in, now can cluster them
-        Dataset[] clusters = clusterContributions(data,k);
-        int worstClusterIndex = findWorstCluster(clusters);
-
-        //now can write back to files - if cluster = worstCluster - write 0, otherwise write 1
-        List<String> newLines = new ArrayList<>();
-        int count = 0;
-        try {
-            for (String line : Files.readAllLines(Paths.get(file.getAbsolutePath()), StandardCharsets.UTF_8)) {
-                if (line.contains("BB,Fitness,Contribution,VotingWeights,NormFit,Size")) {
-                    newLines.add(line+",Cluster");
-                } else {
-                    int id = ids.get(count);
-                    if (id != -1) {
-                        //was included in cluster
-                        //need to check which cluster it was in
-                        boolean inWorstCluster = false;
-                        //was clustered, now we just need to know whether it was in bottom cluster or not
-                        Dataset worstCluster = clusters[worstClusterIndex];
-                        for (int j = 0; j < worstCluster.size() && !inWorstCluster; ++j) {
-                            if (worstCluster.get(j).getID() == id) {
-                                inWorstCluster = true;
-                                newLines.add(line+",0");
-                            }
-                        }
-                        if (!inWorstCluster) {
-                            //should get to vote!
-                            newLines.add(line+",1");
-                        }
-                    } else {
-                        //not a valid contribution
-                        newLines.add(line+",0");
-                    }
-                    count++;
-                }
-            }
-            Files.write(Paths.get(file.getAbsolutePath()), newLines, StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
     }
 
     //This method should have two components.

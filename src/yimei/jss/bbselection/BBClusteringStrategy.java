@@ -1,12 +1,11 @@
 package yimei.jss.bbselection;
 
 import ec.gp.GPNode;
-import net.sf.javaml.clustering.KMeans;
-import net.sf.javaml.core.Dataset;
-import net.sf.javaml.core.DefaultDataset;
-import net.sf.javaml.core.DenseInstance;
-import net.sf.javaml.core.Instance;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import weka.clusterers.SimpleKMeans;
+import weka.core.Attribute;
+import weka.core.FastVector;
+import weka.core.Instances;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,85 +28,84 @@ public class BBClusteringStrategy extends BBSelectionStrategy {
         //Have a selection of building blocks, each with a voting score
         //Want to create k clusters, and select all BBs which fall in the top cluster
 
-        Dataset data = new DefaultDataset();
-        int startIndex = -1;
+        Instances data = convertToWekaFormat(BBVotingWeightStats);
 
-        for (int i = 0; i < BBVotingWeightStats.size(); ++i) {
-            double[] score = new double[] {BBVotingWeightStats.get(i).getSum()};
-            Instance d = new DenseInstance(score);
-            if (data.isEmpty()) {
-                startIndex = d.getID();
-            }
-            data.add(d);
+        String[] options = new String[5];
+        options[0] = "-I"; // max. iterations
+        options[1] = "100";
+        options[2] = "-O"; //preserve order of instances
+        options[3] = "-N";
+        options[4] = String.valueOf(numClusters);
+
+        SimpleKMeans clusterer = new SimpleKMeans();
+        try {
+            clusterer.setOptions(options);
+            clusterer.buildClusterer(data);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        KMeans km = new KMeans(numClusters,100);
-        Dataset[] clusters = km.cluster(data);
+        int bestClusterIndex = getBestClusterIndex(clusterer);
+        int[] assignments = null;
+        try {
+            assignments = clusterer.getAssignments();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        for (int i = 0; i < data.numInstances(); ++i) {
+            if (assignments[i] == bestClusterIndex) {
+                //going to include this building block
+                GPNode bb = BBs.get(i);
+                double votes = BBVotingWeightStats.get(i).getSum();
 
-        int bestClusterIndex = findBestCluster(clusters);
-        Dataset bestCluster = clusters[bestClusterIndex];
+                selBBs.add(bb);
+                selBBsVotingWeights.add(votes);
 
-        for (int i = 0; i < bestCluster.size(); ++i) {
-            DenseInstance instance = (DenseInstance) bestCluster.get(i);
-            int id = instance.getID()-startIndex;
-            GPNode bb = BBs.get(id);
-            double votes = BBVotingWeightStats.get(id).getSum();
-
-            selBBs.add(bb);
-            selBBsVotingWeights.add(votes);
-
-            System.out.println(BBs.get(id).makeCTree(false,true,
-                    true) +" - selected with: "+votes+".");
+                System.out.println(bb.makeCTree(false,true,
+                        true) +" - selected with: "+votes+".");
+            }
         }
     }
 
     @Override
     public int[] selectBuildingBlocks(List<String> BBs, List<Double> BBVotingWeightStats, boolean verbose) {
         int[] selectedBBs = new int[BBs.size()];
-        int numClusters = this.numClusters;
-
         //Have a selection of building blocks, each with a voting score
         //Want to create k clusters, and select all BBs which fall in the top cluster
 
-        Dataset data = new DefaultDataset();
-        int startIndex = -1;
-        List<Double> uniqueScores = new ArrayList();
+        Instances data = convertToWekaFormatDouble(BBVotingWeightStats);
 
-        for (int i = 0; i < BBVotingWeightStats.size(); ++i) {
-            double[] score = new double[] {BBVotingWeightStats.get(i)};
-            if (!uniqueScores.contains(score[0])) {
-                uniqueScores.add(score[0]);
-            }
-            Instance d = new DenseInstance(score);
-            if (data.isEmpty()) {
-                startIndex = d.getID();
-            }
-            data.add(d);
-        }
-        int numUniqueScores = uniqueScores.size();
+        String[] options = new String[5];
+        options[0] = "-I"; // max. iterations
+        options[1] = "100";
+        options[2] = "-O"; //preserve order of instances
+        options[3] = "-N";
+        options[4] = String.valueOf(numClusters);
 
-        if (numUniqueScores+1 < numClusters) {
-            //if we have 10 items, 9 of which are 0.0 and 1 is 1.0
-            //then trying to break it into 3 clusters will not work (below will run indefinitely)
-            //doing this is a bit hacky, but works for our purposes
-            System.out.println("Reducing num clusters to "+(numUniqueScores+1)+" for this run.");
-            numClusters = numUniqueScores+1;
+        SimpleKMeans clusterer = new SimpleKMeans();
+        try {
+            clusterer.setOptions(options);
+            clusterer.buildClusterer(data);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
-        KMeans km = new KMeans(numClusters);
-        Dataset[] clusters = km.cluster(data);
-
-        int bestClusterIndex = findBestCluster(clusters);
-        Dataset bestCluster = clusters[bestClusterIndex];
-
-        for (int i = 0; i < bestCluster.size(); ++i) {
-            DenseInstance instance = (DenseInstance) bestCluster.get(i);
-            int id = instance.getID()-startIndex;
-            String bb = BBs.get(id);
-            double votes = BBVotingWeightStats.get(id);
-            selectedBBs[id] = 1;
-            if (verbose) {
-                System.out.println(BBs.get(id) +" - selected with: "+votes+".");
+        int bestClusterIndex = getBestClusterIndex(clusterer);
+        int[] assignments = null;
+        try {
+            assignments = clusterer.getAssignments();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        for (int i = 0; i < data.numInstances(); ++i) {
+            if (assignments[i] == bestClusterIndex) {
+                //going to include this building block
+                String bb = BBs.get(i);
+                double votes = BBVotingWeightStats.get(i);
+                selectedBBs[i] = 1;
+                if (verbose) {
+                    System.out.println(bb +" - selected with: "+votes+".");
+                }
             }
         }
 
@@ -119,20 +117,59 @@ public class BBClusteringStrategy extends BBSelectionStrategy {
         return numClusters+"-Clustering";
     }
 
-    //helper method
-    private int findBestCluster(Dataset[] clusters) {
-        //need to find the cluster with the highest values
-        //clusters will have distinct ranges - any value from a will be lower than any value from b
-        //therefore can pick any member arbitrarily
-        Double highest = clusters[0].instance(0).get(0);
-        int bestClusterIndex = 0;
-        for (int i = 1; i < clusters.length; ++i) {
-            Double instance = clusters[i].instance(0).get(0);
-            if (instance > highest) {
-                bestClusterIndex = i;
-                highest = instance;
-            }
+    public Instances convertToWekaFormat(List<DescriptiveStatistics> BBVotingWeightStats) {
+        List<Double> votingStats = new ArrayList<>();
+        for (int i = 0; i < BBVotingWeightStats.size(); ++i) {
+            votingStats.add(BBVotingWeightStats.get(i).getSum());
         }
+        return convertToWekaFormatDouble(votingStats);
+    }
+
+    public Instances convertToWekaFormatDouble(List<Double> BBVotingWeightStats) {
+        //numFeatures should be one - Contribution
+        int numFeatures = 1;
+        int numObs = BBVotingWeightStats.size();
+
+        // convert the data to WEKA format
+        FastVector atts = new FastVector();
+        atts.addElement(new Attribute("Score", 0));
+
+        Instances dataSet = new Instances("AAF Data", atts, numObs);
+        for (int i = 0; i < numObs; i++) {
+            dataSet.add(new weka.core.Instance(numFeatures));
+        }
+
+        for (int i = 0; i < BBVotingWeightStats.size(); i++) {
+            double score = BBVotingWeightStats.get(i);
+            dataSet.instance(i).setValue(0,score);
+        }
+
+        return dataSet;
+    }
+
+    public static int getBestClusterIndex(SimpleKMeans clusterer) {
+        int bestClusterIndex = -1;
+        double highestCentroidValue = Double.NEGATIVE_INFINITY;
+        Instances centroids = clusterer.getClusterCentroids();
+
+        //if the clusterer is unable to cluster with numClusters,
+        //it will reduce the number of clusters until it can
+        //if there are all 0's, then there will only be one cluster
+        //and this should not be accepted as the 'best cluster'
+        if (centroids.numInstances() == 1) {
+            return 0; //don't accept the only cluster as the best cluster
+        }
+
+        //expecting numClusters
+        for (int i = 0; i < centroids.numInstances(); ++i) {
+            double centroidVal = centroids.instance(i).value(0);
+            if (centroidVal > highestCentroidValue) {
+                bestClusterIndex = i;
+                highestCentroidValue = centroidVal;
+            }
+            //System.out.println("Cluster "+i+" had centroid value of: "+centroidVal);
+        }
+        //System.out.println("Best cluster "+bestClusterIndex+" with value of: "+highestCentroidValue);
         return bestClusterIndex;
     }
 }

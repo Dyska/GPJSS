@@ -79,34 +79,10 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 List<GPIndividual> selIndis =
                         FeatureUtil.selectDiverseIndis(this, individuals, i, 30);
 
-                long jobSeed = getJobSeed();
-                File BBInfoFile = new File("job." + jobSeed +
-                        " - "+ FeatureUtil.ruleTypes[i].name() + ".selIndi.csv");
-
-                try {
-                    BufferedWriter writer = new BufferedWriter(new FileWriter(BBInfoFile));
-                    writer.write("Rule,Fitness");
-                    writer.newLine();
-                    for (int j = 0; j < selIndis.size(); j++) {
-                        GPIndividual indi = selIndis.get(j);
-                        GPNode node = indi.trees[0].child;
-                        writer.write(node.makeLispTree()+ "," +
-                                        indi.fitness.fitness());
-                        writer.newLine();
-                    }
-                    writer.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
                 //these fitUB and fitLB values are meant to be ClearingKozaFitness values
                 //this returns fitness() as 1/(1+fitness()), so must change values
                 //this list of selIndis is currently sorted by fitness(), which means it is
                 //in the reverse order - so must get last member of list
-
-
-                //gmax = 1 / (1 + min(fitness from all gens) - fitUB?
-                //gmin = 1 / (1 + max(fitness from all gens) - fitLB?
 
                 fitUB = 1/(1+bestFitnesses[i]);
                 fitLB = 1/(1+worstFitnesses[i]);
