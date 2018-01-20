@@ -52,12 +52,14 @@ public class FCMain {
                 return 0;
             }
         });
-        double fitUB = 1/(1+selIndis.get(0).fitness.fitness());
-        double fitLB = 1 - fitUB;
+//        double fitUB = 1/(1+selIndis.get(0).fitness.fitness());
+//        double fitLB = 1 - fitUB;
+//
+//        System.out.println("");
+//        System.out.println("Feature construction analysis being performed for " + ruleType + " population.");
+//        FeatureUtil.featureConstruction(state, selIndis, ruleType, fitUB, fitLB, filtering);
 
-        System.out.println("");
-        System.out.println("Feature construction analysis being performed for " + ruleType + " population.");
-        FeatureUtil.featureConstruction(state, selIndis, ruleType, fitUB, fitLB, filtering);
+        //need to redo all fitness calculations here...
     }
 
     private static double getTotalVotingWeight(double utilLevel, String objective,

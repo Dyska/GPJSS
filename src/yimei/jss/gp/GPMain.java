@@ -26,8 +26,8 @@ public class GPMain {
         if (isDynamic) {
             double utilLevel = 0.85;
             String objective = "mean-flowtime";
-            String contributionSelectionStrategy = "3-Clustering";
-            String bbSelectionStrategy = "3-Clustering";
+            String contributionSelectionStrategy = "2-Clustering";
+            String bbSelectionStrategy = "BB-0.25xTVW";
 
             gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/featureconstruction/fcgp-simplegp-dynamic.params");
             //gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp-dynamic.params");

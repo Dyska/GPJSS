@@ -437,9 +437,9 @@ public class FeatureUtil {
 
         List<GPNode> BBs = buildingBlocks(selIndis, 2);
 
-//        if (preFiltering) {
-//            BBs = prefilterBBs(BBs);
-//        }
+        if (preFiltering) {
+            BBs = prefilterBBs(BBs);
+        }
 
         //String outputPath = initPath(state,false);
 

@@ -153,11 +153,11 @@ public class BBClusteringStrategy extends BBSelectionStrategy {
         Instances centroids = clusterer.getClusterCentroids();
 
         //if the clusterer is unable to cluster with numClusters,
-        //it will reduce the number of clusters until it can
-        //if there are all 0's, then there will only be one cluster
+        //it will reduce the number of clusters until it can.
+        //eg. if there are all 0's, then there will only be one cluster
         //and this should not be accepted as the 'best cluster'
         if (centroids.numInstances() == 1) {
-            return 0; //don't accept the only cluster as the best cluster
+            return -1; //don't accept the only cluster as the best cluster
         }
 
         //expecting numClusters
