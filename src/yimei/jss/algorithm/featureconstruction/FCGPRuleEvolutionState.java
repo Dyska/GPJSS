@@ -38,6 +38,8 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
 
     private double fitUB = Double.NEGATIVE_INFINITY;
     private double fitLB = Double.POSITIVE_INFINITY;
+    private double worstFitnesses[] = null;
+    private double bestFitnesses[] = null;
 
     @Override
     public Ignorer getIgnorer() {
@@ -102,8 +104,12 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 //this list of selIndis is currently sorted by fitness(), which means it is
                 //in the reverse order - so must get last member of list
 
-                fitUB = 1/(1+selIndis.get(selIndis.size()-1).fitness.fitness());
-                fitLB = 1 - fitUB;
+
+                //gmax = 1 / (1 + min(fitness from all gens) - fitUB?
+                //gmin = 1 / (1 + max(fitness from all gens) - fitLB?
+
+                fitUB = 1/(1+bestFitnesses[i]);
+                fitLB = 1/(1+worstFitnesses[i]);
 
                 System.out.println("");
                 System.out.println("Feature construction analysis being performed for "
@@ -198,5 +204,21 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
     @Override
     public void adaptPopulation(int subPopNum) {
         FeatureUtil.adaptPopulationThreeParts(this, fracElites, fracAdapted, subPopNum);
+    }
+
+    public double[] getWorstFitnesses() {
+        return worstFitnesses;
+    }
+
+    public void setWorstFitnesses(double[] worstFitnesses) {
+        this.worstFitnesses = worstFitnesses;
+    }
+
+    public double[] getBestFitnesses() {
+        return bestFitnesses;
+    }
+
+    public void setBestFitnesses(double[] bestFitnesses) {
+        this.bestFitnesses = bestFitnesses;
     }
 }

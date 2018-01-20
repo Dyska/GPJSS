@@ -342,26 +342,14 @@ public class FeatureUtil {
                                               double fitUB, double fitLB) {
         DescriptiveStatistics votingWeightStat = new DescriptiveStatistics();
 
-        if (fitLB == fitUB) {
-            //both must be 0.5
-            //this will cause division by error, which will give infinite normalised fitnesses.
-            double increment = 0.00001;
-            fitLB -= increment;
-            fitUB += increment;
-        }
-
-        //If fitUB = fitLB = 0.5 (happens whenever worst fitness is 1.0)
-        //then we are dividing by 0, so normFit ends being Infinity (or NaN if we have 0/0)
-
         for (GPIndividual selIndi : selIndis) {
             //expecting normalised fitness, this is required unfortunately
             double normFit = (1/(1+selIndi.fitness.fitness()) - fitLB) / (fitUB - fitLB);
 
-            if (normFit < 1.0) {
-                normFit = 1.0;
+            if (normFit < 0.0) {
+                normFit = 0.0;
             }
             double votingWeight = normFit;
-            System.out.println(votingWeight);
             votingWeightStat.addValue(votingWeight);
         }
         return votingWeightStat;

@@ -7,9 +7,12 @@
 
 package ec.simple;
 import ec.*;
+import ec.app.edge.func.Double;
 import ec.steadystate.*;
 import java.io.IOException;
 import ec.util.*;
+import yimei.jss.algorithm.featureconstruction.FCGPRuleEvolutionState;
+
 import java.io.File;
 
 /* 
@@ -178,6 +181,21 @@ public class SimpleStatistics extends Statistics implements SteadyStateStatistic
         // print the best-of-generation individual
         if (doGeneration) state.output.println("\nGeneration: " + state.generation,statisticslog);
         if (doGeneration) state.output.println("Best Individual:",statisticslog);
+
+        //if trying to record fitnesses of best individual in each generation, need to initialise it here
+        if (state instanceof FCGPRuleEvolutionState) {
+            if (((FCGPRuleEvolutionState) state).getWorstFitnesses() == null && ((FCGPRuleEvolutionState) state).getBestFitnesses() == null) {
+                double[] worstFitnesses = new double[state.population.subpops.length];
+                double[] bestFitnesses = new double[state.population.subpops.length];
+
+                for (int x = 0; x < state.population.subpops.length; x++) {
+                    worstFitnesses[x] = java.lang.Double.NEGATIVE_INFINITY;
+                    bestFitnesses[x] = java.lang.Double.POSITIVE_INFINITY;
+                }
+                ((FCGPRuleEvolutionState) state).setWorstFitnesses(worstFitnesses);
+                ((FCGPRuleEvolutionState) state).setBestFitnesses(bestFitnesses);
+            }
+        }
         for(int x=0;x<state.population.subpops.length;x++)
             {
             if (doGeneration) state.output.println("Subpopulation " + x + ":",statisticslog);
@@ -193,7 +211,38 @@ public class SimpleStatistics extends Statistics implements SteadyStateStatistic
                     ((SimpleProblemForm)(state.evaluator.p_problem.clone())).describe(state, best_i[x], x, 0, statisticslog);   
                 }   
             }
+            if (state instanceof FCGPRuleEvolutionState) {
+                double[] worstFitnesses = ((FCGPRuleEvolutionState) state).getWorstFitnesses();
+                double[] bestFitnesses = ((FCGPRuleEvolutionState) state).getBestFitnesses();
+
+                boolean changedWorst = false;
+                boolean changedBest = false;
+
+                for (int x = 0; x < state.population.subpops.length; x++) {
+                    double bestFitnessFromGeneration = best_i[x].fitness.fitness();
+                    if (bestFitnessFromGeneration > worstFitnesses[x]) {
+                        //the fitness from this generation is worst (higher) than the worst fitness from the best
+                        //individual of any generation
+                        worstFitnesses[x] = bestFitnessFromGeneration;
+                        changedWorst = true;
+                    }
+                    if (bestFitnessFromGeneration < bestFitnesses[x]) {
+                        //the fitness from this generation is better (lower) than the best fitness from the best
+                        //individual of any generation
+                        bestFitnesses[x] = bestFitnessFromGeneration;
+                        changedBest = true;
+                    }
+                }
+                if (changedWorst) {
+                    ((FCGPRuleEvolutionState) state).setWorstFitnesses(worstFitnesses);
+                }
+                if (changedBest) {
+                    ((FCGPRuleEvolutionState) state).setBestFitnesses(bestFitnesses);
+                }
+
+            }
         }
+
 
     /** Allows MultiObjectiveStatistics etc. to call super.super.finalStatistics(...) without
         calling super.finalStatistics(...) */

@@ -1,7 +1,5 @@
 package yimei.jss.gp;
 
-import ec.util.Parameter;
-
 import java.io.File;
 import java.nio.file.Paths;
 import java.util.ArrayList;
