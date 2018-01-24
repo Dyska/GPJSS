@@ -3,6 +3,9 @@ package yimei.jss.niching;
 import ec.EvolutionState;
 import ec.simple.SimpleEvaluator;
 import ec.util.Parameter;
+import yimei.jss.ruleevaluation.AbstractEvaluationModel;
+import yimei.jss.ruleoptimisation.RuleOptimizationProblem;
+import yimei.jss.surrogate.Surrogate;
 
 /**
  * The evaluator with population clearing.

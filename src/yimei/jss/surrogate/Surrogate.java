@@ -9,4 +9,5 @@ public interface Surrogate {
 
     void useSurrogate();
     void useOriginal();
+    boolean getSurrogate();
 }

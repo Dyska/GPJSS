@@ -57,7 +57,6 @@ public class FeatureUtil {
     public static List<GPIndividual> selectDiverseIndis(EvolutionState state, Individual[] archive,
                                                         int subPopNum, int n) {
         Arrays.sort(archive);
-
         PhenoCharacterisation pc = null;
         double radius = 0;
         if (state.evaluator instanceof ClearingEvaluator) {
@@ -70,6 +69,7 @@ public class FeatureUtil {
             pc = clearingEvaluator.getPhenoCharacterisation()[subPopNum];
             radius = clearingEvaluator.getRadius();
         }
+
         RuleType ruleType = ruleTypes[subPopNum];
         pc.setReferenceRule(new GPRule(ruleType,((GPIndividual)archive[0]).trees[0]));
 
@@ -245,6 +245,7 @@ public class FeatureUtil {
                 normFit = 0;
             }
             double votingWeight = normFit;
+            System.out.println(votingWeight);
             votingWeightStat.addValue(votingWeight);
         }
 
@@ -370,7 +371,7 @@ public class FeatureUtil {
      * @param ruleType which type of GP rules we are analysing.
      * @return the constructed features (building blocks).
      */
-    public static List<GPNode> featureConstruction(EvolutionState state,
+    public static GPNode[] featureConstruction(EvolutionState state,
                                                    List<GPIndividual> selIndis,
                                                    RuleType ruleType,
                                                    double fitUB, double fitLB,
@@ -399,7 +400,7 @@ public class FeatureUtil {
      * @param bbStrategyStr name of strategy for selection of meaningful building blocks.
      * @return the constructed features (building blocks).
      */
-    public static List<GPNode> featureConstruction(EvolutionState state,
+    public static GPNode[] featureConstruction(EvolutionState state,
                                                    List<GPIndividual> selIndis,
                                                    RuleType ruleType,
                                                    double fitUB, double fitLB,
@@ -426,7 +427,7 @@ public class FeatureUtil {
      * @param bbStrategy strategy for selection of meaningful building blocks.
      * @return the constructed features (building blocks).
      */
-    public static List<GPNode> featureConstruction(EvolutionState state,
+    public static GPNode[] featureConstruction(EvolutionState state,
                                                    List<GPIndividual> selIndis,
                                                    RuleType ruleType,
                                                    double fitUB, double fitLB,
@@ -445,7 +446,7 @@ public class FeatureUtil {
 
         if (BBs.isEmpty()) {
             System.out.println("Exiting early, no remaining building blocks.");
-            return new ArrayList<>(); //no building blocks remain to select
+            return new GPNode[0]; //no building blocks remain to select
         }
 
         List<DescriptiveStatistics> BBContributionStats = new ArrayList<>();
@@ -498,7 +499,7 @@ public class FeatureUtil {
         File fcFile = new File("job." + jobSeed + " - "+ ruleType.name() + ".bbs.csv");
         writeBBs(fcFile, selBBs, selBBsVotingWeights);
 
-        return selBBs;
+        return selBBs.toArray(new GPNode[0]);
     }
 
     public static void writeBBs(File fcFile, List<GPNode> selBBs, List<Double> selBBsVotingWeights) {

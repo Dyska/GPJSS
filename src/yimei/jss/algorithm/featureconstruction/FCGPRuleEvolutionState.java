@@ -4,6 +4,7 @@ import ec.EvolutionState;
 import ec.Individual;
 import ec.gp.GPIndividual;
 import ec.gp.GPNode;
+import ec.simple.SimpleStatistics;
 import ec.util.Checkpoint;
 import ec.util.Parameter;
 import yimei.jss.feature.FeatureIgnorable;
@@ -12,8 +13,10 @@ import yimei.jss.feature.ignore.Ignorer;
 import yimei.jss.gp.GPRuleEvolutionState;
 import yimei.jss.gp.TerminalsChangable;
 import yimei.jss.gp.terminal.BuildingBlock;
+import yimei.jss.niching.ClearingEvaluator;
 import yimei.jss.rule.operation.evolved.GPRule;
 import yimei.jss.ruleoptimisation.RuleOptimizationProblem;
+import yimei.jss.surrogate.Surrogate;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -30,9 +33,10 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
     public static final String P_PRE_GENERATIONS = "pre-generations";
     public static final String P_POP_ADAPT_FRAC_ELITES = "pop-adapt-frac-elites";
     public static final String P_POP_ADAPT_FRAC_ADAPTED = "pop-adapt-frac-adapted";
+    public static final String P_DO_ADAPT = "feature-construction-adapt-population";
 
     private Ignorer ignorer;
-    private int preGenerations;
+    public int preGenerations;
     private double fracElites;
     private double fracAdapted;
 
@@ -40,6 +44,7 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
     private double fitLB = Double.POSITIVE_INFINITY;
     private double worstFitnesses[] = null;
     private double bestFitnesses[] = null;
+    private boolean doAdapt;
 
     @Override
     public Ignorer getIgnorer() {
@@ -63,13 +68,12 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 new Parameter(P_POP_ADAPT_FRAC_ELITES), null, 0.0);
         fracAdapted = state.parameters.getDoubleWithDefault(
                 new Parameter(P_POP_ADAPT_FRAC_ADAPTED), null, 1.0);
+        doAdapt = state.parameters.getBoolean(new Parameter(P_DO_ADAPT),
+                null, true);
     }
 
     @Override
     public int evolve() {
-        if (generation > 0)
-            output.message("Generation " + generation);
-
         if (generation == preGenerations) {
             evaluator.evaluatePopulation(this);
 
@@ -96,11 +100,32 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                         new Parameter("contributionSelectionStrategy"),null);
 
                 boolean preFiltering = true;
-                FeatureUtil.featureConstruction(this, selIndis,
+                GPNode[] features = FeatureUtil.featureConstruction(this, selIndis,
                                 FeatureUtil.ruleTypes[i], fitUB, fitLB,
                         preFiltering, contributionSelectionStrategy,
                         bbSelectionStrategy);
+
+                if (doAdapt) {
+                    addTerminals(features,i);
+
+                    //stop clearing individuals
+                    ((ClearingEvaluator)evaluator).setClear(false);
+                    //begin using full scheduling set, not the surrogate set
+                    ((Surrogate)((RuleOptimizationProblem) evaluator.p_problem)
+                            .getEvaluationModel()).useOriginal();
+
+                    //now need to empty population and begin from scratch
+                    if (statistics instanceof SimpleStatistics) {
+                        ((SimpleStatistics) statistics).best_of_run[i] = null;
+                    }
+                    population.clear();
+                    output.message("Initializing Generation 0");
+                    population = initializer.initialPopulation(this, 0); // unthreaded
+                }
             }
+        }
+        if (generation > 0) {
+            output.message("Generation " + generation%preGenerations);
         }
 
         // EVALUATION

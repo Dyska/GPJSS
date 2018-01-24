@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.*;
 
 import ec.Individual;
+import org.apache.commons.lang3.ArrayUtils;
+import yimei.jss.algorithm.featureconstruction.FCGPRuleEvolutionState;
 import yimei.jss.gp.terminal.AttributeGPNode;
 import yimei.jss.gp.terminal.DoubleERC;
 import yimei.jss.gp.terminal.JobShopAttribute;
@@ -55,6 +57,19 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
     public void setTerminals(GPNode[] terminals, int subPopNum) {
         this.terminals[subPopNum] = terminals;
     }
+
+	public void addTerminals(GPNode[] newTerminals, int subPopNum) {
+		if (newTerminals.length == 0) {
+			return;
+		}
+		GPNode[] existingTerminals = this.terminals[subPopNum];
+        for (GPNode newT: newTerminals) {
+            System.out.println("Adding terminal "+newT.makeCTree(false,true,true)+" to terminal set "+subPopNum+".");
+        }
+
+        //combine new terminals and existing terminals together
+        this.terminals[subPopNum] = ArrayUtils.addAll(existingTerminals, newTerminals);
+	}
 
     /**
 	 * Initialize the terminal set with all the job shop attributes.
@@ -207,7 +222,12 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
 			genTimes.add(duration);
 			totalTime += duration;
 
-			output.message("Generation " + (generation-1) + " elapsed " + duration + " seconds.");
+            if (this instanceof FCGPRuleEvolutionState) {
+                int preGenerations = ((FCGPRuleEvolutionState)this).preGenerations;
+                output.message("Generation " + (generation-1)%preGenerations + " elapsed " + duration + " seconds.");
+            } else {
+                output.message("Generation " + (generation-1) + " elapsed " + duration + " seconds.");
+            }
         }
 
 		output.message("The whole program elapsed " + totalTime + " seconds.");

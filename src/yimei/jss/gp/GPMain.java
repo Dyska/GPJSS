@@ -24,14 +24,14 @@ public class GPMain {
         gpRunArgs.add("-file");
 
         if (isDynamic) {
-            double utilLevel = 0.85;
-            String objective = "mean-flowtime";
+            double utilLevel = 0.95;
+            String objective = "mean-weighted-flowtime";
             String contributionSelectionStrategy = "2-Clustering";
-            String bbSelectionStrategy = "BB-0.25xTVW";
+            String bbSelectionStrategy = "3-Clustering";
 
             gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/featureconstruction/fcgp-simplegp-dynamic.params");
-            //gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp-dynamic.params");
-            //gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/simplegp/simplegp-dynamic.params");
+            //gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp-dynamic.params");
+            //gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/simplegp/simplegp-dynamic.params");
             gpRunArgs.add("-p");
             gpRunArgs.add("eval.problem.eval-model.sim-models.0.util-level="+utilLevel);
             gpRunArgs.add("-p");

@@ -18,7 +18,6 @@ state = yimei.jss.algorithm.featureconstruction.FCGPRuleEvolutionState
 finish = ec.simple.SimpleFinisher
 exch = ec.simple.SimpleExchanger
 breed =	ec.simple.SimpleBreeder
-eval = ec.simple.SimpleEvaluator
 stat = ec.simple.SimpleStatistics
 stat.file = $out.stat
 #stat.num-children = 1
@@ -26,15 +25,15 @@ stat.file = $out.stat
 stat.do-generation = true
 stat.do-message = true
 
-generations = 51
+generations = 102
 quit-on-run-complete = false
 
 pop = ec.Population
 pop.subpops = 1
 pop.subpop.0 = ec.Subpopulation
-pop.subpop.0.size = 15
+pop.subpop.0.size = 1024
 
-breed.elite.0 = 1
+breed.elite.0 = 10
 
 # ==============================
 # GP general parameters
@@ -216,7 +215,7 @@ gp.fs.0.func.6.nc = nc2
 eval = yimei.jss.niching.ClearingEvaluator
 eval.problem = yimei.jss.ruleoptimisation.RuleOptimizationProblem
 eval.problem.data = yimei.jss.gp.data.DoubleData
-eval.problem.eval-model = yimei.jss.ruleevaluation.SimpleEvaluationModel
+eval.problem.eval-model = yimei.jss.ruleevaluation.HalfShopEvaluationModel
 eval.problem.eval-model.objectives = 1
 eval.problem.eval-model.objectives.0 = mean-flowtime
 eval.problem.eval-model.sim-models = 1
@@ -228,6 +227,6 @@ eval.problem.eval-model.sim-models.0.warmup-jobs = 1000
 pre-generations = 50
 pop-adapt-frac-elites = 0
 pop-adapt-frac-adapted = 0.1
-feature-selection-adapt-population = false
+feature-construction-adapt-population = true
 terminals-from = relative
 ignorer = yimei.jss.feature.ignore.SimpleIgnorer
