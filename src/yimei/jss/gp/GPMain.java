@@ -15,7 +15,7 @@ public class GPMain {
     public static void main(String[] args) {
         List<String> gpRunArgs = new ArrayList<>();
         boolean isTest = true;
-        int maxTests = 1;
+        int maxTests = 30;
         boolean isDynamic = true;
 
         String workingDirectory = (new File("")).getAbsolutePath();
@@ -25,9 +25,11 @@ public class GPMain {
 
         if (isDynamic) {
             double utilLevel = 0.95;
-            String objective = "mean-weighted-flowtime";
+            String objective = "max-flowtime";
             String contributionSelectionStrategy = "2-Clustering";
-            String bbSelectionStrategy = "3-Clustering";
+            String bbSelectionStrategy = "2-Clustering";
+
+            //Calling -jar GPJSS-FC.jar -file params/fcgp-simplegp-dynamic.params -p eval.problem.eval-model.sim-models.0.util-level=0.95 -p eval.problem.eval-model.objectives.0=max-flowtime -p contributionSelectionStrategy=2-Clustering -p bbSelectionStrategy=2-Clustering -p seed.0=13 -p stat.file=job.13.out.stat
 
             gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/featureconstruction/fcgp-simplegp-dynamic.params");
             //gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp-dynamic.params");
@@ -41,12 +43,14 @@ public class GPMain {
             gpRunArgs.add("-p");
             gpRunArgs.add("contributionSelectionStrategy="+contributionSelectionStrategy);
             gpRunArgs.add("-p");
-            for (int i = 1; i <= 30 && i <= maxTests; ++i) {
+            for (int i = 13; i <= 13 && i <= maxTests; ++i) {
                 gpRunArgs.add("seed.0="+String.valueOf(i));
+                gpRunArgs.add("-p");
+                gpRunArgs.add("stat.file=job."+String.valueOf(i)+".out.stat");
                 //convert list to array
                 GPRun.main(gpRunArgs.toArray(new String[0]));
                 //now remove the seed, we will add new value in next loop
-                gpRunArgs.remove(gpRunArgs.size()-1);
+                gpRunArgs.remove(gpRunArgs.size()-3);
             }
         } else {
             //gpRunArgs.add("workingDirectory+/src/yimei/jss/algorithm/featureselection/fsgp-simplegp-static.params");

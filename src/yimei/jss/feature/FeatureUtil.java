@@ -446,7 +446,7 @@ public class FeatureUtil {
 
         if (BBs.isEmpty()) {
             System.out.println("Exiting early, no remaining building blocks.");
-            return new GPNode[0]; //no building blocks remain to select
+            return new GPNode[0];
         }
 
         List<DescriptiveStatistics> BBContributionStats = new ArrayList<>();

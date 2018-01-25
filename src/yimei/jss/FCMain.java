@@ -348,9 +348,6 @@ public class FCMain {
     public static void main(String[] args) {
         String[] objectives = new String[] {"max-flowtime","mean-flowtime","mean-weighted-flowtime"};
         double[] utilLevels = new double[] {0.85, 0.95};
-        //String outputDir = "/out/subtree_contributions/";
-        //String outputDirFiltered = "/out/subtree_contributions_filtered/";
-        //boolean preFiltering = false;
 
         for (String objective: objectives) {
             for (double utilLevel: utilLevels) {
