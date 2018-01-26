@@ -31,7 +31,7 @@ quit-on-run-complete = false
 pop = ec.Population
 pop.subpops = 1
 pop.subpop.0 = ec.Subpopulation
-pop.subpop.0.size = 11
+pop.subpop.0.size = 1024
 
 breed.elite.0 = 10
 
@@ -228,6 +228,7 @@ pre-generations = 50
 pop-adapt-frac-elites = 0
 pop-adapt-frac-adapted = 0.1
 feature-construction-adapt-population = true
-feature-construction-filter-test = true
+#feature-construction-filter-test = true
 terminals-from = relative
 ignorer = yimei.jss.feature.ignore.SimpleIgnorer
+feature-construction-prefiltering = false

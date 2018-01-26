@@ -2,12 +2,17 @@ package yimei.jss;
 
 import ec.Evolve;
 import ec.gp.GPIndividual;
+import ec.gp.GPNode;
 import ec.gp.GPTree;
 import ec.util.ParameterDatabase;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import yimei.jss.algorithm.featureconstruction.FCGPRuleEvolutionState;
 import yimei.jss.bbselection.*;
+import yimei.jss.contributionselection.ContributionClusteringStrategy;
+import yimei.jss.contributionselection.ContributionSelectionStrategy;
+import yimei.jss.contributionselection.ContributionStaticThresholdStrategy;
 import yimei.jss.feature.FeatureUtil;
+import yimei.jss.gp.GPRuleEvolutionState;
 import yimei.jss.niching.ClearingMultiObjectiveFitness;
 import yimei.jss.rule.RuleType;
 import yimei.jss.rule.operation.evolved.GPRule;
@@ -16,10 +21,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 import static ec.Evolve.loadParameterDatabase;
+import static yimei.jss.feature.FeatureUtil.buildingBlocks;
 
 /**
  * Created by dyska on 14/12/17.
@@ -29,67 +35,196 @@ import static ec.Evolve.loadParameterDatabase;
  */
 public class FCMain {
 
-    static String diverseIndisDir = "/data/diverse_individuals/";
+    static String diverseIndisDir = "/data/filter_tests/";
     //static String contributionsDir = "/out/subtree_contributions/";
 
+    /**
+     * This method should read in the file of diverse individuals corresponding to
+     * the provided utilLevel, objective, seed and ruleType. With this set of diverse individuals,
+     * different contribution selection and building block selection strategies to be supplied, to
+     * find the differing results.
+     * @param utilLevel utilLevel used when producing selected individuals,
+     * @param objective optimised objective when producing selected individuals,
+     * @param seed seed used when producing selected individuals,
+     * @param ruleType type of selected individuals,
+     * @param outputDir directory to output results.
+     */
     public static void runFeatureConstruction(double utilLevel, String objective,
-                                              int seed, RuleType ruleType, String outputDir, boolean filtering) {
-        List<GPIndividual> selIndis = readInSelectedIndividuals(utilLevel, objective, seed, ruleType);
+                                              int seed, RuleType ruleType,
+                                              String outputDir) {
+        String directory = (new File("")).getAbsolutePath();
+        String localDir = diverseIndisDir+utilLevel+"-"+objective+"/";
+        String outDir = outputDir+utilLevel+"-"+objective+"/";
+        String fileName = "job."+seed+" - "+ruleType+".csv";
 
-        FCGPRuleEvolutionState state = initState(utilLevel, objective, seed);
+        File indiFile = new File(directory+localDir+fileName);
+        File outFile = new File(directory+outDir+fileName);
 
-        for (GPIndividual indi: selIndis) {
-            FeatureUtil.initFitness(state, indi, ruleType);
+        //region <Read in params from file.>
+        List<GPIndividual> selIndis = new ArrayList<>();
+        List<GPNode> BBs = new ArrayList<>();
+        double[][] contributions = null;
+        DescriptiveStatistics votingWeightStat = new DescriptiveStatistics();
+
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(indiFile));
+            String line = br.readLine(); //first row should say SelIndis
+            while (!(line = br.readLine()).equals("BBs")) {
+                String[] vals = line.split(",");
+                selIndis.add(initGPIndi(vals,ruleType));
+            }
+            //reading in building blocks now
+            while (!(line = br.readLine()).equals("Contributions")) {
+                //selIndis.add(initGPIndi(vals,ruleType));
+                GPTree tree = GPRule.readFromLispExpression(ruleType,
+                        line).getGPTree();
+                BBs.add(tree.child);
+            }
+            contributions = new double[selIndis.size()][BBs.size()];
+            int rowNum = 0;
+            while (!(line = br.readLine()).equals("VotingWeightStat")) {
+                double[] row = new double[BBs.size()];
+                String[] vals = line.split(",");
+                for (int i = 0; i < vals.length; ++i) {
+                    row[i] = Double.parseDouble(vals[i]);
+                }
+                contributions[rowNum] = row;
+                rowNum++;
+            }
+            while ((line = br.readLine()) != null) {
+                String[] vals = line.split(",");
+                for (int i = 0; i < vals.length; ++i) {
+                    votingWeightStat.addValue(Double.parseDouble(vals[i]));
+                }
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        //endregion
+
+        //FCGPRuleEvolutionState state = initState(utilLevel, objective, seed);
+
+        //region <Define strategies>
+        ContributionSelectionStrategy baselineContributionSelectionStrat =
+                new ContributionStaticThresholdStrategy(0.001);
+        BBSelectionStrategy baselineBBSelectionStrat =
+                new StaticProportionTotalVotingWeight(0.5);
+
+        List<ContributionSelectionStrategy> contributionStrategies = new ArrayList<>();
+        contributionStrategies.add(new ContributionClusteringStrategy(2));
+        contributionStrategies.add(new ContributionClusteringStrategy(3));
+
+        List<BBSelectionStrategy> bbStrategies = new ArrayList<>();
+        bbStrategies.add(new TopKStrategy(1));
+        bbStrategies.add(new BBClusteringStrategy(2));
+        bbStrategies.add(new BBClusteringStrategy(3));
+        bbStrategies.add(new StaticProportionTotalVotingWeight(0.25));
+        //endregion
+
+        List<DescriptiveStatistics> BBVotingWeightStats = new ArrayList<>();
+        for (int i = 0; i < BBs.size(); i++) {
+            BBVotingWeightStats.add(new DescriptiveStatistics());
         }
 
-        //should reorder individuals - highest fitness first
-        Collections.sort(selIndis, (o1, o2) -> {
-            if (o1.fitness.fitness() < o2.fitness.fitness()) {
-                return 1;
-            } else if (o1.fitness.fitness() > o2.fitness.fitness()) {
-                return -1;
-            } else {
-                return 0;
+        List<GPNode> filteredBBs = FeatureUtil.prefilterBBs(BBs);
+
+        List<List<String>> outputMatrix = initMatrix(BBs,filteredBBs);
+
+        //this is the baseline method
+        GPNode[] selBBs = featureConstructionMock(contributions,selIndis,BBs,BBVotingWeightStats,votingWeightStat,
+                baselineContributionSelectionStrat,baselineBBSelectionStrat);
+        addToMatrix(outputMatrix,baselineContributionSelectionStrat,baselineBBSelectionStrat,selBBs);
+
+        for (ContributionSelectionStrategy c: contributionStrategies) {
+            for (BBSelectionStrategy b: bbStrategies) {
+                selBBs = featureConstructionMock(contributions,selIndis,BBs,BBVotingWeightStats,votingWeightStat,c,b);
+                addToMatrix(outputMatrix,c,b,selBBs);
             }
-        });
+        }
+        writeFilteringMatrix(outFile,outputMatrix);
+    }
+
+    /**
+     * This method is the second half of the FeatureUtil.FeatureConstruction method, with the writing to files
+     * removed.
+     * @param contributions
+     * @param selIndis
+     * @param BBs
+     * @param BBVotingWeightStats
+     * @param votingWeightStat
+     * @param contributionStrategy
+     * @param bbStrategy
+     * @return selectedBuildingblocks.
+     */
+    private static GPNode[] featureConstructionMock(double[][] contributions, List<GPIndividual> selIndis,
+                                                    List<GPNode> BBs, List<DescriptiveStatistics> BBVotingWeightStats,
+                                                    DescriptiveStatistics votingWeightStat,
+                                                    ContributionSelectionStrategy contributionStrategy,
+                                                    BBSelectionStrategy bbStrategy) {
+        //select which contributions to count
+        contributionStrategy.selectContributions(contributions,selIndis,BBs,BBVotingWeightStats,votingWeightStat);
+
+        //Now select which building blocks to record!
+
+        List<GPNode> selBBs = new LinkedList<>();
+        List<Double> selBBsVotingWeights = new LinkedList<>();
+
+        //ugly, sorry
+        //total voting weight will not be known if we are running the whole process from scratch (ie generating
+        //diverse set of individuals, not reading them in from a file)
+        if (bbStrategy instanceof StaticProportionTotalVotingWeight) {
+            ((StaticProportionTotalVotingWeight) bbStrategy).setTotalVotingWeight(votingWeightStat.getSum());
+        }
+
+        //update these empty lists with results
+        bbStrategy.selectBuildingBlocks(BBs,selBBs,BBVotingWeightStats,selBBsVotingWeights);
+
+        return selBBs.toArray(new GPNode[0]);
+    }
+
+//    private static double getTotalVotingWeight(double utilLevel, String objective,
+//                                        int seed, RuleType ruleType) {
+//        String directory = (new File("")).getAbsolutePath();
+//        directory += diverseIndisDir+utilLevel+"-"+objective+"/";
+//        directory += "job."+seed+" - "+ruleType+".csv";
+//        File indiFile = new File(directory);
+//        List<GPIndividual> selIndis = readInSelectedIndividuals(indiFile, ruleType);
+//
+//        FCGPRuleEvolutionState state = initState(utilLevel, objective, seed);
+//
+//        for (GPIndividual indi: selIndis) {
+//            FeatureUtil.initFitness(state, indi, ruleType);
+//        }
+//
+//        //should reorder individuals - highest fitness first
+//        Collections.sort(selIndis, (o1, o2) -> {
+//            if (o1.fitness.fitness() < o2.fitness.fitness()) {
+//                return 1;
+//            } else if (o1.fitness.fitness() > o2.fitness.fitness()) {
+//                return -1;
+//            } else {
+//                return 0;
+//            }
+//        });
+//
 //        double fitUB = 1/(1+selIndis.get(0).fitness.fitness());
 //        double fitLB = 1 - fitUB;
 //
-//        System.out.println("");
-//        System.out.println("Feature construction analysis being performed for " + ruleType + " population.");
-//        FeatureUtil.featureConstruction(state, selIndis, ruleType, fitUB, fitLB, filtering);
-
-        //need to redo all fitness calculations here...
-    }
-
-    private static double getTotalVotingWeight(double utilLevel, String objective,
-                                        int seed, RuleType ruleType) {
-        List<GPIndividual> selIndis = readInSelectedIndividuals(utilLevel, objective, seed, ruleType);
-
-        FCGPRuleEvolutionState state = initState(utilLevel, objective, seed);
-
-        for (GPIndividual indi: selIndis) {
-            FeatureUtil.initFitness(state, indi, ruleType);
-        }
-
-        //should reorder individuals - highest fitness first
-        Collections.sort(selIndis, (o1, o2) -> {
-            if (o1.fitness.fitness() < o2.fitness.fitness()) {
-                return 1;
-            } else if (o1.fitness.fitness() > o2.fitness.fitness()) {
-                return -1;
-            } else {
-                return 0;
-            }
-        });
-
-        double fitUB = 1/(1+selIndis.get(0).fitness.fitness());
-        double fitLB = 1 - fitUB;
-
-        DescriptiveStatistics stat = FeatureUtil.initVotingWeightStat(selIndis, fitUB, fitLB);
-
-        return stat.getSum();
-    }
+//        DescriptiveStatistics stat = FeatureUtil.initVotingWeightStat(selIndis, fitUB, fitLB);
+//
+//        return stat.getSum();
+//    }
 
     public static FCGPRuleEvolutionState initState(double utilLevel, String objective, int seed) {
         List<String> args = new ArrayList();
@@ -111,12 +246,33 @@ public class FCMain {
         return state;
     }
 
-    public static List<GPIndividual> readInSelectedIndividuals(double utilLevel, String objective,
-                                                               int seed, RuleType ruleType) {
-        String directory = (new File("")).getAbsolutePath();
-        directory += diverseIndisDir+utilLevel+"-"+objective+"/";
-        directory += "job."+seed+" - "+ruleType+".selIndi.csv";
-        File indiFile = new File(directory);
+    public static double[] readInFitnessBounds(File indiFile) {
+        double[] fitnessBounds = new double[2];
+
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new FileReader(indiFile));
+            String line = br.readLine(); //skip first row, which should be fitUB and fitLB
+            String[] bounds = line.split(",");
+            fitnessBounds[0] = Double.parseDouble(bounds[0]);
+            fitnessBounds[1] = Double.parseDouble(bounds[1]);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return fitnessBounds;
+    }
+
+    public static List<GPIndividual> readInSelectedIndividuals(File indiFile, RuleType ruleType) {
         List<GPIndividual> individuals = new ArrayList<>();
 
         BufferedReader br = null;
@@ -124,7 +280,7 @@ public class FCMain {
 
         try {
             br = new BufferedReader(new FileReader(indiFile));
-            line = br.readLine(); //skip header
+            line = br.readLine(); //skip first row, which should be fitUB and fitLB
             while ((line = br.readLine()) != null) {
                 String[] vals = line.split(",");
                 individuals.add(initGPIndi(vals,ruleType));
@@ -142,7 +298,6 @@ public class FCMain {
                 }
             }
         }
-
         return individuals;
     }
 
@@ -151,7 +306,7 @@ public class FCMain {
         g.trees = new GPTree[] {GPRule.readFromLispExpression(ruleType,
                 vals[0]).getGPTree()};
         ClearingMultiObjectiveFitness fitness = new ClearingMultiObjectiveFitness();
-        fitness.objectives = new double[] {Double.MAX_VALUE}; //cannot use provided fitness
+        fitness.objectives = new double[] {10.0}; //shouldn't be using this fitness
         fitness.maxObjective = new double[] {1.0};
         fitness.minObjective = new double[] {0.0};
         fitness.maximize = new boolean[] {false};
@@ -198,16 +353,16 @@ public class FCMain {
         }
         readVotingScores(bbsFile, BBVotingWeightStats, BBs);
 
-        double totalVotingWeight = getTotalVotingWeight(utilLevel, objective, seed, ruleType);
+        //double totalVotingWeight = getTotalVotingWeight(utilLevel, objective, seed, ruleType);
 
         //create our list of building block strategies
         List<BBSelectionStrategy> bbStrategies = new ArrayList<>();
         bbStrategies.add(new TopKStrategy(1));
         bbStrategies.add(new BBClusteringStrategy(2));
         bbStrategies.add(new BBClusteringStrategy(3));
-        bbStrategies.add( new StaticProportionTotalVotingWeight(totalVotingWeight, 0.25));
-        bbStrategies.add(new StaticProportionTotalVotingWeight(totalVotingWeight, 0.50));
-        bbStrategies.add(new StaticProportionTotalVotingWeight(totalVotingWeight, 0.75));
+        bbStrategies.add( new StaticProportionTotalVotingWeight(0.25));
+        bbStrategies.add(new StaticProportionTotalVotingWeight(0.50));
+        bbStrategies.add(new StaticProportionTotalVotingWeight(0.75));
         bbStrategies.add(new BBStaticThresholdStrategy(5.0));
         bbStrategies.add(new BBStaticThresholdStrategy(10.0));
         bbStrategies.add(new BBStaticThresholdStrategy(15.0));
@@ -345,24 +500,99 @@ public class FCMain {
         }
     }
 
+    private static List<List<String>> initMatrix(List<GPNode> BBs, List<GPNode> filteredBBs) {
+        //should be as many rows as there are building blocks
+        List matrix = new ArrayList<>();
+        //add an initial row
+        List<String> headerRow = new ArrayList<String>();
+        headerRow.add("BB");
+        headerRow.add("Filtered");
+        matrix.add(headerRow);
+        //want to put filteredBBs as the top rows, and the rest of the BBs after
+        for (GPNode f: filteredBBs) {
+            List<String> row = new ArrayList<String>();
+            row.add(f.makeCTree(false,true,true));
+            row.add(String.valueOf(1)); //included when filtering used
+            matrix.add(row);
+        }
+        //should check whether lists are same size - will be the case when filtering = true
+        if (BBs.size() != filteredBBs.size()) {
+            for (GPNode b: BBs) {
+                if (!filteredBBs.contains(b)) { //don't want to include same building block twice
+                    List<String> row = new ArrayList<String>();
+                    row.add(b.makeCTree(false,true,true));
+                    row.add(String.valueOf(0)); //not included when filtering used
+                    matrix.add(row);
+                }
+            }
+        }
+        return matrix;
+    }
+
+    private static void addToMatrix(List<List<String>> matrix, ContributionSelectionStrategy c,
+                                    BBSelectionStrategy b, GPNode[] selBBs) {
+        //first want to add this combination of strategies to header
+        String header = c.getName()+"-"+b.getName();
+        List<String> headerRow = matrix.get(0);
+        headerRow.add(header);
+        matrix.set(0,headerRow);
+
+        for (int i = 1; i < matrix.size(); ++i) {
+            List<String> row = matrix.get(i);
+            String bb = row.get(0); //always first item in row
+            boolean didSelectBB = false;
+            for (int j = 0; j < selBBs.length && !didSelectBB; ++j) {
+                GPNode gpNode = selBBs[j];
+                if (bb.equals(gpNode.makeCTree(false,true,true))) {
+                    //selected this building block!
+                    didSelectBB = true;
+                }
+            }
+            if (didSelectBB) {
+                row.add("1");
+            } else {
+                row.add("0");
+            }
+            matrix.set(i,row);
+        }
+    }
+
+    private static void writeFilteringMatrix(File outFile, List<List<String>> outputMatrix) {
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(outFile));
+            for (List<String> row: outputMatrix) {
+                String rowString = "";
+                for (String entry: row) {
+                    rowString += entry + ",";
+                }
+                rowString = rowString.substring(0,rowString.length()-1); //remove lagging ','
+                writer.write(rowString);
+                writer.newLine();
+            }
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) {
         String[] objectives = new String[] {"max-flowtime","mean-flowtime","mean-weighted-flowtime"};
-        double[] utilLevels = new double[] {0.85, 0.95};
+        double[] utilLevels = new double[] {0.85,0.95};
 
         for (String objective: objectives) {
             for (double utilLevel: utilLevels) {
                 System.out.println(objective +" "+utilLevel);
-                for (int seed = 0; seed < 30; ++seed) {
-//                    runFeatureConstruction(utilLevel, objective, seed,
-//                            RuleType.SEQUENCING, "/out/subtree_contributions/", false);
+                for (int seed = 0; seed < 1; ++seed) {
+                    runFeatureConstruction(utilLevel, objective, seed,
+                            RuleType.SEQUENCING, "/data/filter_results/");
 //                    runFeatureConstruction(utilLevel, objective, seed,
 //                            RuleType.SEQUENCING, "/out/subtree_contributions_filtered/", true);
                     //addClusterInfomation(utilLevel, objective, seed, RuleType.SEQUENCING);
-                    addBBSelectionFile(utilLevel,
-                            objective,
-                            seed,
-                            RuleType.SEQUENCING,
-                            "/out/subtree_contributions_filtered/");
+//                    addBBSelectionFile(utilLevel,
+//                            objective,
+//                            seed,
+//                            RuleType.SEQUENCING,
+//                            "/out/subtree_contributions_filtered/");
                     //removeTotalVotingWeight(utilLevel,objective,seed,RuleType.SEQUENCING);
                 }
             }

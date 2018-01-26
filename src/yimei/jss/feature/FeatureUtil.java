@@ -7,11 +7,13 @@ import ec.gp.GPIndividual;
 import ec.gp.GPNode;
 import ec.gp.GPTree;
 import ec.multiobjective.MultiObjectiveFitness;
+import ec.util.Parameter;
 import net.sf.javaml.clustering.KMeans;
 import net.sf.javaml.core.Dataset;
 import net.sf.javaml.core.DefaultDataset;
 import net.sf.javaml.core.DenseInstance;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import yimei.jss.algorithm.featureconstruction.FCGPRuleEvolutionState;
 import yimei.jss.bbselection.BBSelectionStrategy;
 import yimei.jss.bbselection.BBStaticThresholdStrategy;
 import yimei.jss.bbselection.StaticProportionTotalVotingWeight;
@@ -149,9 +151,11 @@ public class FeatureUtil {
         Ignorer ignorer = ((FeatureIgnorable)state).getIgnorer();
 
         MultiObjectiveFitness fit1 = (MultiObjectiveFitness) indi.fitness;
+        MultiObjectiveFitness retestFitness = (MultiObjectiveFitness) fit1.clone();
         MultiObjectiveFitness fit2 = (MultiObjectiveFitness) fit1.clone();
 
         GPRule rule = new GPRule(ruleType,(GPTree)indi.trees[0].clone());
+        GPRule originalRule = new GPRule(ruleType,(GPTree)indi.trees[0].clone());
         rule.ignore(feature, ignorer);
 
         int numSubPops;
@@ -164,15 +168,12 @@ public class FeatureUtil {
 
         Fitness[] fitnesses = new Fitness[numSubPops];
         GPRule[] rules = new GPRule[numSubPops];
+        Fitness[] originalFitnesses = new Fitness[numSubPops];
+        GPRule[] originalRules = new GPRule[numSubPops];
         int index = 0;
         if (ruleType == RuleType.ROUTING) {
             index = 1;
         }
-
-        //It is important that sequencing rule is at [0] and routing rule is at [1]
-        //as the CCGP evaluation model is expecting this
-        fitnesses[index] = fit2;
-        rules[index] = rule;
 
         if (numSubPops == 2) {
             //also need to get context of other rule to compare
@@ -195,8 +196,17 @@ public class FeatureUtil {
         //as the CCGP evaluation model is expecting this
         fitnesses[index] = fit2;
         rules[index] = rule;
+        originalFitnesses[index] = retestFitness;
+        originalRules[index] = originalRule;
 
+        problem.getEvaluationModel().evaluate(Arrays.asList(originalFitnesses), Arrays.asList(originalRules), state);
         problem.getEvaluationModel().evaluate(Arrays.asList(fitnesses), Arrays.asList(rules), state);
+//        if (fit1.fitness() != retestFitness.fitness()) {
+//            //fit1 = 0.9305136256459143
+//            //reTest = 0.9619167091877106
+//            System.out.println("This is a problem.");
+//        }
+
 
         return fit2.fitness() - fit1.fitness();
     }
@@ -442,8 +452,6 @@ public class FeatureUtil {
             BBs = prefilterBBs(BBs);
         }
 
-        //String outputPath = initPath(state,false);
-
         if (BBs.isEmpty()) {
             System.out.println("Exiting early, no remaining building blocks.");
             return new GPNode[0];
@@ -468,6 +476,11 @@ public class FeatureUtil {
                 contributions[s][i] = c;
                 BBContributionStats.get(i).addValue(c);
             }
+        }
+        if (!preFiltering) {
+            //for testing purposes - will remove this
+            outputState(state,selIndis,BBs,contributions,votingWeightStat,ruleType);
+            return new GPNode[0];
         }
 
         //select which contributions to count
@@ -543,6 +556,72 @@ public class FeatureUtil {
                     writer.newLine();
                 }
             }
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Want to record the state just before going into the feature construction portion of this method,
+     * so this can be mocked effectively. This involves saving the state to a file.
+     */
+    private static void outputState(EvolutionState state, List<GPIndividual> selIndis,
+                                    List<GPNode> BBs,  double[][] contributions,
+                                    DescriptiveStatistics votingWeightStat, RuleType ruleType) {
+
+        String workingDirectory = (new File("")).getAbsolutePath();
+        workingDirectory += "/data/filter_tests/";
+        long seed = ((FCGPRuleEvolutionState) state).getJobSeed();
+        double utilLevel = state.parameters.getDoubleWithDefault(
+                new Parameter("eval.problem.eval-model.sim-models.0.util-level"), null, 0.0);
+        String obj = state.parameters.getStringWithDefault(
+                new Parameter("eval.problem.eval-model.objectives.0"), null, "");
+        workingDirectory += utilLevel + "-" + obj + "/";
+        File outputFile = new File(workingDirectory + "job." + seed + " - " + ruleType.toString() + ".csv");
+        System.out.println(outputFile.toString());
+
+        //Create an output file to store results in - should place in utillevel-objective folder,
+        //with a seed and rule type in the file name.
+        //First line should be fitUB and fitLB
+        //rest should be selected individuals - full tree structure and fitness
+        //Want to record the individuals, fitUB and fitLB,
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
+            writer.write("SelIndis");
+            writer.newLine();
+            for (int i = 0; i < selIndis.size(); ++i) {
+                GPIndividual individual = selIndis.get(i);
+                writer.write(individual.trees[0].child.makeLispTree());
+                writer.newLine();
+            }
+            writer.write("BBs");
+            writer.newLine();
+            for (int i = 0; i < BBs.size(); ++i) {
+                GPNode bb = BBs.get(i);
+                writer.write(bb.makeLispTree());
+                writer.newLine();
+            }
+            writer.write("Contributions");
+            writer.newLine();
+            for (int i = 0; i < contributions.length; ++i) {
+                String row = "";
+                for (int j = 0; j < contributions[i].length; ++j) {
+                    row += contributions[i][j] +",";
+                }
+                row = row.substring(0,row.length()-1);
+                writer.write(row);
+                writer.newLine();
+            }
+            writer.write("VotingWeightStat");
+            writer.newLine();
+            String row = "";
+            for (int i = 0; i < contributions.length; ++i) {
+                row += votingWeightStat.getElement(i) +",";
+            }
+            row = row.substring(0,row.length()-1);
+            writer.write(row);
+            writer.newLine();
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();

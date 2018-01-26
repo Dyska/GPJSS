@@ -28,6 +28,8 @@ public class ContributionStaticThresholdStrategy extends ContributionSelectionSt
 
                 if (c > threshold) {
                     BBVotingWeightStats.get(i).addValue(votingWeightStat.getElement(s));
+                    System.out.println("Rule "+s+" voted for building block "+i+
+                            " with weight "+votingWeightStat.getElement(s)+" - c: "+c+".");
                 }
                 else {
                     BBVotingWeightStats.get(i).addValue(0);

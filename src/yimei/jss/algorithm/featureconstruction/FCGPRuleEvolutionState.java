@@ -42,7 +42,7 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
     public static final String P_POP_ADAPT_FRAC_ELITES = "pop-adapt-frac-elites";
     public static final String P_POP_ADAPT_FRAC_ADAPTED = "pop-adapt-frac-adapted";
     public static final String P_DO_ADAPT = "feature-construction-adapt-population";
-    public static final String P_DO_FILTER_TEST = "feature-construction-filter-test";
+    public static final String P_DO_FILTERING = "feature-construction-prefiltering";
 
 
     private Ignorer ignorer;
@@ -55,7 +55,7 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
     private double worstFitnesses[] = null;
     private double bestFitnesses[] = null;
     private boolean doAdapt;
-    private boolean doFilterTest;
+    private boolean doFiltering;
 
     @Override
     public Ignorer getIgnorer() {
@@ -81,7 +81,8 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 new Parameter(P_POP_ADAPT_FRAC_ADAPTED), null, 1.0);
         doAdapt = state.parameters.getBoolean(new Parameter(P_DO_ADAPT),
                 null, true);
-        doFilterTest = state.parameters.getBoolean(new Parameter(P_DO_FILTER_TEST), null, false);
+        doFiltering = state.parameters.getBoolean(new Parameter(P_DO_FILTERING),
+                null, true);
     }
 
     @Override
@@ -111,16 +112,14 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 String contributionSelectionStrategy = parameters.getString(
                         new Parameter("contributionSelectionStrategy"),null);
 
-                if (doFilterTest) {
-                    outputState(this, selIndis, FeatureUtil.ruleTypes[i], fitUB, fitLB);
-                    System.exit(0);
-                }
-
-                boolean preFiltering = true;
                 GPNode[] features = FeatureUtil.featureConstruction(this, selIndis,
                                 FeatureUtil.ruleTypes[i], fitUB, fitLB,
-                        preFiltering, contributionSelectionStrategy,
+                        doFiltering, contributionSelectionStrategy,
                         bbSelectionStrategy);
+                if (features.length == 0 && !doFiltering) {
+                    //used for testing purposes
+                    return 0;
+                }
 
                 if (doAdapt) {
                     addTerminals(features,i);
@@ -240,41 +239,5 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
         this.bestFitnesses = bestFitnesses;
     }
 
-    /**
-     * Want to record the state just before going into the feature construction portion of this method,
-     * so this can be mocked effectively. This involves saving the state to a file.
-     */
-    private static void outputState(GPRuleEvolutionState state, List<GPIndividual> selIndis,
-                                    RuleType ruleType, double fitUB, double fitLB) {
-        String workingDirectory = (new File("")).getAbsolutePath();
-        workingDirectory += "/data/filter_tests/";
-        long seed = state.getJobSeed();
-        double utilLevel = state.parameters.getDoubleWithDefault(
-                new Parameter("eval.problem.eval-model.sim-models.0.util-level"), null, 0.0);
-        String obj = state.parameters.getStringWithDefault(
-                new Parameter("eval.problem.eval-model.objectives.0"), null, "");
-        workingDirectory += utilLevel + "-" + obj + "/";
-        File outputFile = new File(workingDirectory + "job." + seed + " - " + ruleType.toString() + ".csv");
-        System.out.println(outputFile.toString());
 
-        //Create an output file to store results in - should place in utillevel-objective folder,
-        //with a seed and rule type in the file name.
-        //First line should be fitUB and fitLB
-        //rest should be selected individuals - full tree structure and fitness
-        //Want to record the individuals, fitUB and fitLB,
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile));
-            writer.write(fitUB + "," + fitLB);
-            writer.newLine();
-            for (int i = 0; i < selIndis.size(); ++i) {
-                GPIndividual individual = selIndis.get(i);
-                BuildingBlock bb = new BuildingBlock(individual.trees[0].child);
-                writer.write(bb.toString() + "," + individual.fitness.fitness());
-                writer.newLine();
-            }
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 }
