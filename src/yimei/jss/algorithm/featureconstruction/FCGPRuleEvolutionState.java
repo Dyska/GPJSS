@@ -43,7 +43,7 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
     public static final String P_POP_ADAPT_FRAC_ADAPTED = "pop-adapt-frac-adapted";
     public static final String P_DO_ADAPT = "feature-construction-adapt-population";
     public static final String P_DO_FILTERING = "feature-construction-prefiltering";
-
+    public static final String P_DO_TIMING_TEST = "feature-construction-timing";
 
     private Ignorer ignorer;
     public int preGenerations;
@@ -56,6 +56,7 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
     private double bestFitnesses[] = null;
     private boolean doAdapt;
     private boolean doFiltering;
+    private boolean doTimingTest;
 
     @Override
     public Ignorer getIgnorer() {
@@ -83,6 +84,8 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 null, true);
         doFiltering = state.parameters.getBoolean(new Parameter(P_DO_FILTERING),
                 null, true);
+        doTimingTest = state.parameters.getBoolean(new Parameter(P_DO_TIMING_TEST),
+                null, false);
     }
 
     @Override
@@ -111,6 +114,31 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 String bbSelectionStrategy = parameters.getString(new Parameter("bbSelectionStrategy"),null);
                 String contributionSelectionStrategy = parameters.getString(
                         new Parameter("contributionSelectionStrategy"),null);
+
+                if (doTimingTest) {
+                    boolean filtering = true;
+                    long startFiltering = yimei.util.Timer.getCpuTime();
+                    FeatureUtil.featureConstruction(this, selIndis,
+                            FeatureUtil.ruleTypes[i], fitUB, fitLB,
+                            filtering, contributionSelectionStrategy,
+                            bbSelectionStrategy);
+                    long finishFiltering = yimei.util.Timer.getCpuTime();
+                    double durationFiltering = (finishFiltering - startFiltering) / 1000000000;
+
+                    filtering = false;
+                    long startNoFiltering = yimei.util.Timer.getCpuTime();
+                    FeatureUtil.featureConstruction(this, selIndis,
+                            FeatureUtil.ruleTypes[i], fitUB, fitLB,
+                            filtering, contributionSelectionStrategy,
+                            bbSelectionStrategy);
+                    long finishNoFiltering = yimei.util.Timer.getCpuTime();
+                    double durationNoFiltering = (finishNoFiltering - startNoFiltering) / 1000000000;
+
+                    System.out.println("FC took "+durationFiltering+" seconds with filtering, "+durationNoFiltering+" seconds without.");
+                    //TODO: Output this to a file maybe... or just analyse the "e"/"o" file for results actually
+
+                    return 0;
+                }
 
                 GPNode[] features = FeatureUtil.featureConstruction(this, selIndis,
                                 FeatureUtil.ruleTypes[i], fitUB, fitLB,
