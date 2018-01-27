@@ -231,5 +231,5 @@ feature-construction-adapt-population = true
 #feature-construction-filter-test = true
 terminals-from = relative
 ignorer = yimei.jss.feature.ignore.SimpleIgnorer
-feature-construction-prefiltering = false
-feature-construction-timing = true
+feature-construction-prefiltering = true
+feature-construction-timing = false

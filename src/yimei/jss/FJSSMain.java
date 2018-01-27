@@ -162,7 +162,7 @@ public class FJSSMain {
     }
 
     public static List<String> getFileNames(List<String> fileNames, Path dir, String ext) {
-        if (dir.toAbsolutePath().toString().endsWith(ext)) {
+        if (dir.toAbsolutePath().toString().endsWith(ext) && ext != "") {
             //have been passed a file
             fileNames.add(dir.toString());
         } else {

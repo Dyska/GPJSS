@@ -53,13 +53,15 @@ public class GridResultCleaner {
     private boolean doIncludeGenerations;
     private int numPops;
     private boolean isStatic;
+    private boolean isSurrogate;
     private AbstractRule routingRule;
 
-    public GridResultCleaner(String simulationType, String dirName, int numPops, boolean doIncludeGenerations) {
+    public GridResultCleaner(String simulationType, String dirName, int numPops, boolean doIncludeGenerations, boolean isSurrogate) {
         this.dataPath =  GRID_PATH + simulationType + "/raw/" + dirName;
         this.outPath =  GRID_PATH + simulationType+ "/cleaned/" + dirName;
         this.numPops = numPops;
         this.doIncludeGenerations = doIncludeGenerations;
+        this.isSurrogate = isSurrogate;
         if (simulationType.toLowerCase() == "static") {
             isStatic = true;
             benchmarkMakespans = InitBenchmarkMakespans();
@@ -68,9 +70,10 @@ public class GridResultCleaner {
         }
     }
 
-    public GridResultCleaner(String simulationType, String dirName, AbstractRule routingRule, int numPops, boolean doIncludeGenerations) {
+    public GridResultCleaner(String simulationType, String dirName, AbstractRule routingRule, int numPops, boolean doIncludeGenerations, boolean isSurrogate) {
         this.dataPath =  GRID_PATH + simulationType + "/raw/" + dirName;
         this.outPath =  GRID_PATH + simulationType+ "/cleaned/" + dirName+"/"+routingRule.getName();
+        this.isSurrogate = isSurrogate;
         this.numPops = numPops;
         this.routingRule = routingRule;
         this.doIncludeGenerations = doIncludeGenerations;
@@ -226,6 +229,16 @@ public class GridResultCleaner {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        if (isSurrogate) {
+            //going to assume that the first half of fitnesses are from surrogate evaluation
+            //note last fitness is best, so remove this with -1
+            int numSurrogates = (bestFitnesses.size()-1)/2;
+            if (numSurrogates != 51) {
+                System.out.println("Unexpected number of surrogate generations, check this out.");
+            }
+            bestFitnesses = bestFitnesses.subList(numSurrogates,bestFitnesses.size());
+        }
+
         return bestFitnesses.toArray(new Double[0]);
     }
 
@@ -313,7 +326,15 @@ public class GridResultCleaner {
     }
 
     public static void main(String args[]) {
-        GridResultCleaner grc = new GridResultCleaner("dynamic","simple_modified_terminal_final",2, true);
+        String simulationType = "dynamic";
+        //String simulationType = "static";
+        String directoryName = "simple-fc-train";
+        int numPopulations = 1;
+        boolean doIncludeGenerations = true;
+        boolean isSurrogate = true;
+
+        GridResultCleaner grc = new GridResultCleaner(simulationType,directoryName,
+                numPopulations,doIncludeGenerations,isSurrogate);
         grc.cleanResults();
     }
 }

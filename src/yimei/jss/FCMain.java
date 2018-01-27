@@ -1,8 +1,10 @@
 package yimei.jss;
 
 import ec.Evolve;
+import ec.Fitness;
 import ec.gp.GPIndividual;
 import ec.gp.GPNode;
+import ec.gp.GPNodeParent;
 import ec.gp.GPTree;
 import ec.util.ParameterDatabase;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -13,18 +15,27 @@ import yimei.jss.contributionselection.ContributionSelectionStrategy;
 import yimei.jss.contributionselection.ContributionStaticThresholdStrategy;
 import yimei.jss.feature.FeatureUtil;
 import yimei.jss.gp.GPRuleEvolutionState;
+import yimei.jss.gp.terminal.AttributeGPNode;
+import yimei.jss.gp.terminal.ConstantTerminal;
+import yimei.jss.gp.terminal.JobShopAttribute;
+import yimei.jss.jobshop.Objective;
 import yimei.jss.niching.ClearingMultiObjectiveFitness;
 import yimei.jss.rule.RuleType;
 import yimei.jss.rule.operation.evolved.GPRule;
+import yimei.util.lisp.LispSimplifier;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 import static ec.Evolve.loadParameterDatabase;
+import static yimei.jss.FJSSMain.getDirectoryNames;
+import static yimei.jss.FJSSMain.getFileNames;
 import static yimei.jss.feature.FeatureUtil.buildingBlocks;
 
 /**
@@ -575,27 +586,215 @@ public class FCMain {
         }
     }
 
+    /**
+     * This method should be run over the job.x.out.stat files. Because of a previous bug, the depth 2 subtrees
+     * that had been added to the terminal set (eg. (+ MWT PT)) were being represented in the rule only by their
+     * root (eg. +). This leads to parsing problems, as an operator should never be a terminal. This method
+     * should iterate through the provided directory, read in the correct building blocks for each seed, and
+     * find which rules have incorrectly represented those building blocks.
+     *
+     * This will not work for a file with multiple building blocks with the same root operator, as there will
+     * be no way to know which operator was meant to be used. These files will need to be rerun.
+     */
+    private static void fixTerminalSubtreeRules(String directory) {
+        //eg. simple-fc-train
+        String workingDirectory = (new File("")).getAbsolutePath();
+        workingDirectory += "/grid_results/dynamic/raw/";
+        workingDirectory += directory;
+        System.out.println(workingDirectory);
+
+        List<Path> directoryNames = getDirectoryNames(new ArrayList(),Paths.get(workingDirectory),".out.stat");
+        for (Path directoryPath: directoryNames) {
+            for (int seed = 0; seed < 30; ++seed) {
+                boolean broken = false;
+                File bbsFile = new File(directoryPath.toString() + "/job." + seed + " - SEQUENCING.bbs.csv");
+                File statFile = new File(directoryPath.toString() + "/job." + seed + ".out.stat");
+                List<String> bbs = readBuildingBlocks(bbsFile);
+                if (bbs.isEmpty()) {
+                    //can't have affected any rules
+                    continue;
+                }
+
+                List<String> allLines = null;
+                try {
+                    allLines = Files.readAllLines(Paths.get(statFile.getAbsolutePath()), StandardCharsets.UTF_8);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+                List<GPRule> rules = readRules(statFile);
+                for (GPRule r : rules) {
+                    GPTree ruleTree = r.getGPTree();
+                    String oldRule = r.getLispString();
+                    List<GPNode> terminals = FeatureUtil.faultyTerminalsInTree(ruleTree.child);
+                    for (GPNode terminal : terminals) {
+                        //System.out.println("Subtree of type "+terminal.toString()+" found.");
+                        List<String> matchingBBs = new ArrayList<>();
+                        for (String bb : bbs) {
+                            if (bb.contains(terminal.toString())) {
+                                matchingBBs.add(bb);
+                            }
+                        }
+                        if (matchingBBs.size() == 0) {
+                            System.out.println("Terminal not found, what happened here?");
+                        } else if (matchingBBs.size() > 1) {
+                            //System.out.println("Unable to determine which BB this operator belongs to, nothing to do here.");
+                            broken = true;
+                        } else {
+                            String fullSubtree = matchingBBs.get(0); //expecting something like "(max TIS OWT)
+                            fullSubtree = fullSubtree.substring(1, fullSubtree.length() - 1);
+                            String[] args = fullSubtree.split(" ");
+                            terminal.children = new GPNode[2];
+                            terminal.children[0] = new AttributeGPNode(JobShopAttribute.get(args[1]));
+                            terminal.children[1] = new AttributeGPNode(JobShopAttribute.get(args[2]));
+                            terminal.children[0].children = new GPNode[0];
+                            terminal.children[1].children = new GPNode[0];
+                            terminal.children[0].parent = terminal;
+                            terminal.children[1].parent = terminal;
+                            terminal.children[0].argposition = 0;
+                            terminal.children[1].argposition = 1;
+
+                            GPNode root = terminal;
+                            while (root.parent != null) {
+                                root = (GPNode) root.parent;
+                            }
+                            String newRule = root.makeLispTree();
+
+                            for (int i = 0; i < allLines.size(); ++i) {
+                                String line = allLines.get(i);
+                                if (line.contains(oldRule)) {
+                                    System.out.println("Changing "+oldRule+" to "+newRule);
+                                    allLines.set(i, " " + newRule);
+                                }
+                            }
+                            oldRule = newRule;
+                        }
+                    }
+                }
+                if (broken) {
+                    System.out.println(bbsFile.toString());
+                }
+                try {
+                    Files.write(Paths.get(statFile.getAbsolutePath()), allLines, StandardCharsets.UTF_8);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private static List<String> readBuildingBlocks(File bbFile) {
+        String line = "";
+        BufferedReader br = null;
+        List<String> bbs = new ArrayList<>();
+        try {
+            br = new BufferedReader(new FileReader(bbFile));
+            while ((line = br.readLine()) != null) {
+                String[] vals = line.split(",");
+                bbs.add(vals[0]);
+            }
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (br != null) {
+                try {
+                    br.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return bbs;
+    }
+
+    private static List<GPRule> readRules(File statFile) {
+        //The below code is taken from RuleTest.writeToCSV
+        String line;
+        List<GPRule> rules = new ArrayList<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(statFile))) {
+            while (!(line = br.readLine()).equals("Best Individual of Run:")) {
+                if (line.startsWith("Generation")) {
+                    br.readLine(); //Best individual:
+                    br.readLine(); //Subpopulation i:
+                    br.readLine(); //Evaluated: true
+                    line = br.readLine(); //this will be either a fitness or collaborator rule
+
+                    br.readLine(); //Tree 0:
+                    String expression = br.readLine();
+
+                    GPRule rule = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.SEQUENCING, expression);
+                    rules.add(rule);
+                }
+            }
+
+            br.readLine(); //Subpopulation i:
+            br.readLine(); //Evaluated: true
+            line = br.readLine(); //this will be either a fitness or collaborator rule
+
+            br.readLine(); //Tree 0:
+            String expression = br.readLine();
+
+            expression = LispSimplifier.simplifyExpression(expression);
+
+            //subpop 0 is sequencing rules
+            GPRule bestRule = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.SEQUENCING, expression);
+            rules.add(bestRule);
+
+        } catch (IOException e){
+            e.printStackTrace();
+        }
+        //can get rid of first 51 rules
+        rules = rules.subList(51,rules.size());
+        return rules;
+    }
+
+    private static void fixFile(String fileName) {
+        String workingDirectory = (new File("")).getAbsolutePath();
+        File file = new File(workingDirectory+"/"+fileName);
+        try {
+            List<String> newLines = new ArrayList<>();
+            for (String line : Files.readAllLines(Paths.get(file.getAbsolutePath()), StandardCharsets.UTF_8)) {
+                //qsub -t 1-30 run-gpjss-fc-dynamic-simple.sh fcgp-simplegp-dynamic 0.85 max-flowtime 3-Clustering BB-0.25xTVW/job.10
+                if (line.contains("job")) {
+                    int seed = Integer.parseInt(line.substring(line.lastIndexOf('.')+1))+1;
+                    line = line.replaceAll("1-30",seed+"-"+seed);
+                    line = line.substring(0,line.lastIndexOf('/'));
+                }
+                newLines.add(line);
+            }
+            Files.write(Paths.get(file.getAbsolutePath()), newLines, StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) {
         String[] objectives = new String[] {"max-flowtime","mean-flowtime","mean-weighted-flowtime"};
         double[] utilLevels = new double[] {0.85,0.95};
 
-        for (String objective: objectives) {
-            for (double utilLevel: utilLevels) {
-                System.out.println(objective +" "+utilLevel);
-                for (int seed = 0; seed < 1; ++seed) {
-                    runFeatureConstruction(utilLevel, objective, seed,
-                            RuleType.SEQUENCING, "/data/filter_results/");
+        fixTerminalSubtreeRules("simple-fc-train");
+        //fixFile("yi-batch-rungrid-fc-dynamic-simple.sh");
+
+//        for (String objective: objectives) {
+//            for (double utilLevel: utilLevels) {
+//                System.out.println(objective +" "+utilLevel);
+//                for (int seed = 0; seed < 1; ++seed) {
 //                    runFeatureConstruction(utilLevel, objective, seed,
-//                            RuleType.SEQUENCING, "/out/subtree_contributions_filtered/", true);
-                    //addClusterInfomation(utilLevel, objective, seed, RuleType.SEQUENCING);
-//                    addBBSelectionFile(utilLevel,
-//                            objective,
-//                            seed,
-//                            RuleType.SEQUENCING,
-//                            "/out/subtree_contributions_filtered/");
-                    //removeTotalVotingWeight(utilLevel,objective,seed,RuleType.SEQUENCING);
-                }
-            }
-        }
+//                            RuleType.SEQUENCING, "/data/filter_results/");
+////                    runFeatureConstruction(utilLevel, objective, seed,
+////                            RuleType.SEQUENCING, "/out/subtree_contributions_filtered/", true);
+//                    //addClusterInfomation(utilLevel, objective, seed, RuleType.SEQUENCING);
+////                    addBBSelectionFile(utilLevel,
+////                            objective,
+////                            seed,
+////                            RuleType.SEQUENCING,
+////                            "/out/subtree_contributions_filtered/");
+//                    //removeTotalVotingWeight(utilLevel,objective,seed,RuleType.SEQUENCING);
+//                }
+//            }
+//        }
     }
 }

@@ -14,21 +14,21 @@ public class GPMain {
 
     public static void main(String[] args) {
         boolean isTest = true;
-        int maxTests = 30;
+        int maxTests = 1;
         boolean isDynamic = true;
 
         String workingDirectory = (new File("")).getAbsolutePath();
 
-        double[] utilLevels = new double[] {0.85, 0.95};
-        String[] objectives = new String[] {"max-flowtime","mean-flowtime","mean-weighted-flowtime"};
+        double[] utilLevels = new double[] {0.95};
+        String[] objectives = new String[] {"max-flowtime"};
         for (double utilLevel: utilLevels) {
             for (String objective: objectives) {
                 List<String> gpRunArgs = new ArrayList<>();
                 //include path to params file
                 gpRunArgs.add("-file");
                 if (isDynamic) {
-                    String contributionSelectionStrategy = "2-Clustering";
-                    String bbSelectionStrategy = "2-Clustering";
+                    String contributionSelectionStrategy = "3-Clustering";
+                    String bbSelectionStrategy = "top-1";
 
                     //Calling -jar GPJSS-FC.jar -file params/fcgp-simplegp-dynamic.params -p eval.problem.eval-model.sim-models.0.util-level=0.95 -p eval.problem.eval-model.objectives.0=max-flowtime -p contributionSelectionStrategy=2-Clustering -p bbSelectionStrategy=2-Clustering -p seed.0=13 -p stat.file=job.13.out.stat
 

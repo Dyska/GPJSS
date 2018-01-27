@@ -5,6 +5,7 @@ import ec.gp.GPTree;
 import org.apache.commons.lang3.math.NumberUtils;
 import yimei.jss.gp.function.*;
 import yimei.jss.gp.terminal.AttributeGPNode;
+import yimei.jss.gp.terminal.BuildingBlock;
 import yimei.jss.gp.terminal.ConstantTerminal;
 import yimei.jss.gp.terminal.JobShopAttribute;
 import yimei.jss.ruleanalysis.ResultFileReader;
@@ -123,8 +124,34 @@ public class LispParser {
             if (NumberUtils.isNumber(expression)) {
                 node = new ConstantTerminal(Double.valueOf(expression));
             }
-            else {
+            else if (JobShopAttribute.get(expression) != null){
                 node = new AttributeGPNode(JobShopAttribute.get(expression));
+            } else {
+                switch(expression) {
+                    case "+":
+                        node = new Add();
+                        break;
+                    case "-":
+                        node = new Sub();
+                        break;
+                    case "*":
+                        node = new Mul();
+                        break;
+                    case "/":
+                        node = new Div();
+                        break;
+                    case "max":
+                        node = new Max();
+                        break;
+                    case "min":
+                        node = new Min();
+                        break;
+                    case "if":
+                        node = new If();
+                        break;
+                    default:
+                        break;
+                }
             }
             node.children = new GPNode[0];
         }

@@ -107,7 +107,7 @@ public class FeatureUtil {
     }
 
     public static void terminalsInTree(List<GPNode> terminals, GPNode tree) {
-        if (tree.depth() == 0) {
+        if (tree.depth() == 1) {
             boolean duplicated = false;
 
             for (GPNode terminal : terminals) {
@@ -132,6 +132,43 @@ public class FeatureUtil {
         terminalsInTree(terminals, tree);
 
         return terminals;
+    }
+
+    public static List<GPNode> faultyTerminalsInTree(GPNode tree) {
+        List<GPNode> terminals = new ArrayList<>();
+        faultyTerminalsInTree(terminals, tree);
+
+        return terminals;
+    }
+
+//    public static void addCompletedTerminal(GPNode tree, GPNode terminal) {
+//        if (tree.depth() == 1) {
+//            if (!(tree instanceof AttributeGPNode) && !(tree instanceof ConstantTerminal)) {
+//                System.out.println(tree);
+//            }
+//            if (tree.toString().equals(terminal.toString())) {
+//                //just checking both same class
+//                tree.parent
+//            }
+//        }
+//        else {
+//            for (GPNode child : tree.children) {
+//                addCompletedTerminal(child, terminal);
+//            }
+//        }
+//    }
+
+    public static void faultyTerminalsInTree(List<GPNode> terminals, GPNode tree) {
+        if (tree.depth() == 1) {
+            if (!(tree instanceof AttributeGPNode) && !(tree instanceof ConstantTerminal)) {
+                terminals.add(tree);
+            }
+        }
+        else {
+            for (GPNode child : tree.children) {
+                faultyTerminalsInTree(terminals, child);
+            }
+        }
     }
 
     /**

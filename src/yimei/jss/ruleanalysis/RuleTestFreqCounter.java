@@ -29,8 +29,9 @@ public class RuleTestFreqCounter extends RuleTest {
                                String testSetName,
                                List<Objective> objectives,
                                String featureSetName,
-                               int numPopulations) {
-        super(trainPath, ruleType, numRuns, testScenario, testSetName, objectives, numPopulations);
+                               int numPopulations,
+                               boolean wasSurrogate) {
+        super(trainPath, ruleType, numRuns, testScenario, testSetName, objectives, numPopulations, wasSurrogate);
         this.featureSetName = featureSetName;
     }
 
@@ -40,9 +41,10 @@ public class RuleTestFreqCounter extends RuleTest {
                                String testScenario,
                                String testSetName,
                                String featureSetName,
-                               int numPopulations) {
+                               int numPopulations,
+                               boolean wasSurrogate) {
         this(trainPath, ruleType, numRuns, testScenario, testSetName,
-                new ArrayList<>(), featureSetName, numPopulations);
+                new ArrayList<>(), featureSetName, numPopulations, wasSurrogate);
     }
 
     public List<GPNode> featuresFromSetName() {
@@ -105,7 +107,7 @@ public class RuleTestFreqCounter extends RuleTest {
             System.out.println("run: " + i);
             File sourceFile = new File(trainPath + "job." + i + ".out.stat");
 
-            TestResult result = TestResult.readFromFile(sourceFile, ruleType, numPopulations);
+            TestResult result = TestResult.readFromFile(sourceFile, ruleType, numPopulations, wasSurrogate);
 
             GPRule[] bestRules = (GPRule[]) (result.getBestRules());
             GPRule seqRule;
@@ -151,6 +153,7 @@ public class RuleTestFreqCounter extends RuleTest {
         String testSetName = "";
         int numObjectives = 0;
         int numPopulations = 1;
+        boolean wasSurrogate = false;
         List<Objective> objectives = new ArrayList<>();
         String featureSetName = "";
         for (int i = 0; i < algos.length; i++) {
@@ -159,7 +162,7 @@ public class RuleTestFreqCounter extends RuleTest {
                 featureSetName = fsNames[i];
 
                 RuleTestFreqCounter ruleTest = new RuleTestFreqCounter(trainPath,
-                        ruleType, numRuns, testScenario, testSetName, objectives, featureSetName, numPopulations);
+                        ruleType, numRuns, testScenario, testSetName, objectives, featureSetName, numPopulations, wasSurrogate);
 
                 ruleTest.writeToCSV();
             }

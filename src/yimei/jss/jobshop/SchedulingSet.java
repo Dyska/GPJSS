@@ -143,7 +143,7 @@ public class SchedulingSet {
                                                int reps) {
         List<Simulation> simulations = new ArrayList<>();
         simulations.add(
-                DynamicSimulation.standardFull(simSeed, null, null, 10, 4000, 1000,
+                DynamicSimulation.standardFull(simSeed, null, null, 10, 5000, 1000,
                         utilLevel, dueDateFactor));
         List<Integer> replications = new ArrayList<>();
         replications.add(reps);
@@ -158,7 +158,7 @@ public class SchedulingSet {
                                                   int reps) {
         List<Simulation> simulations = new ArrayList<>();
         simulations.add(
-                DynamicSimulation.standardMissing(simSeed, null, null, 10, 4000, 1000,
+                DynamicSimulation.standardMissing(simSeed, null, null, 10, 5000, 1000,
                         utilLevel, dueDateFactor));
         List<Integer> replications = new ArrayList<>();
         replications.add(reps);

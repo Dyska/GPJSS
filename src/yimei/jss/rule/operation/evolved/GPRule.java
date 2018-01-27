@@ -83,8 +83,12 @@ public class GPRule extends AbstractRule {
                 new CalcPriorityProblem(op, workCenter, systemState);
 
         DoubleData tmp = new DoubleData();
-        gpTree.child.eval(null, 0, tmp, null, null, calcPrioProb);
-
+        try {
+            gpTree.child.eval(null, 0, tmp, null, null, calcPrioProb);
+        } catch (ArrayIndexOutOfBoundsException a) {
+            System.out.println(gpTree.child.makeLispTree());
+            System.out.println();
+        }
         return tmp.value;
     }
 }

@@ -27,7 +27,8 @@ public class ResultFileReader {
     public static TestResult readTestResultFromFile(File file,
                                                     RuleType ruleType,
                                                     boolean isMultiObjective,
-                                                    int numPopulations) {
+                                                    int numPopulations,
+                                                    boolean wasSurrogate) {
         TestResult result = new TestResult();
 
         String line;
@@ -136,6 +137,30 @@ public class ResultFileReader {
                     //subpop 1 is routing rules
                     rules[i] = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.ROUTING,expression);
                 }
+            }
+
+            if (wasSurrogate) {
+                //At this stage here, now should remove surrogates, so best calculations are valid
+                //Don't need to worry about best rule/best fitness, as this comes from final lines of out,stat file,
+                //which are already configured to include non-surrogate generations.
+                int numSurrogates = result.getGenerationalRules().size()/2;
+                if (numSurrogates != 51) {
+                    System.out.println("Unexpected number of surrogate generations, check this out.");
+                }
+                List<AbstractRule[]> generationalRules = result.getGenerationalRules();
+                List<Fitness> generationalTrainFitnesses = result.getGenerationalTrainFitnesses();
+                List<Fitness> generationalValidationFitnesses = result.getGenerationalValidationFitnesses();
+                List<Fitness> generationalTestFitnesses = result.getGenerationalTestFitnesses();
+
+                generationalRules = generationalRules.subList(numSurrogates,generationalRules.size());
+                generationalTrainFitnesses = generationalTrainFitnesses.subList(numSurrogates,generationalTrainFitnesses.size());
+                generationalValidationFitnesses = generationalValidationFitnesses.subList(numSurrogates,generationalValidationFitnesses.size());
+                generationalTestFitnesses = generationalTestFitnesses.subList(numSurrogates,generationalTestFitnesses.size());
+
+                result.setGenerationalRules(generationalRules);
+                result.setGenerationalTrainFitnesses(generationalTrainFitnesses);
+                result.setGenerationalValidationFitness(generationalValidationFitnesses);
+                result.setGenerationalTestFitnesses(generationalTestFitnesses);
             }
 
             Fitness fitness = fitnesses[0];

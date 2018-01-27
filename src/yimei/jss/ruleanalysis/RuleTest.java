@@ -26,10 +26,12 @@ public class RuleTest {
     protected String testSetName;
     protected List<Objective> objectives; // The objectives to test.
     protected int numPopulations;
+    protected boolean wasSurrogate;
 
     public RuleTest(String trainPath, RuleType ruleType, int numRuns,
                     String testScenario, String testSetName,
-                    List<Objective> objectives, int numPopulations) {
+                    List<Objective> objectives, int numPopulations,
+                    boolean wasSurrogate) {
         this.trainPath = trainPath;
         this.ruleType = ruleType;
         this.numRuns = numRuns;
@@ -37,11 +39,12 @@ public class RuleTest {
         this.testSetName = testSetName;
         this.objectives = objectives;
         this.numPopulations = numPopulations;
+        this.wasSurrogate = wasSurrogate;
     }
 
     public RuleTest(String trainPath, RuleType ruleType, int numRuns,
-                    String testScenario, String testSetName, int numPopulations) {
-        this(trainPath, ruleType, numRuns, testScenario, testSetName, new ArrayList<>(), numPopulations);
+                    String testScenario, String testSetName, int numPopulations, boolean wasSurrogate) {
+        this(trainPath, ruleType, numRuns, testScenario, testSetName, new ArrayList<>(), numPopulations, wasSurrogate);
     }
 
     public String getTrainPath() {
@@ -65,6 +68,8 @@ public class RuleTest {
     public List<Objective> getObjectives() {
         return objectives;
     }
+
+    public boolean getWasSurrogate() {return wasSurrogate; }
 
     public void setObjectives(List<Objective> objectives) {
 		this.objectives = objectives;
@@ -95,37 +100,30 @@ public class RuleTest {
 
         List<TestResult> testResults = new ArrayList<>();
 
-        for (int i = 0; i < numRuns; i++) {
+        for (int i = 2; i < numRuns; i++) {
             File sourceFile = new File(trainPath + "job." + i + ".out.stat");
 
-            TestResult result = TestResult.readFromFile(sourceFile, ruleType, numPopulations);
+            TestResult result = TestResult.readFromFile(sourceFile, ruleType, numPopulations, wasSurrogate);
 
             File timeFile = new File(trainPath + "job." + i + ".time.csv");
             result.setGenerationalTimeStat(ResultFileReader.readTimeFromFile(timeFile));
 
-//            long start = System.currentTimeMillis();
-//
-////            result.validate(objectives);
-//
-//            for (int j = 0; j < result.getGenerationalRules().size(); j++) {
-//                AbstractRule[] generationalRules = result.getGenerationalRules(j);
-//                if (numPopulations == 2) {
-//                    generationalRules[0].calcFitness(
-//                            result.getGenerationalTestFitness(j), null,
-//                            testSet, generationalRules[1], objectives);
-//                } else {
-//                    AbstractRule routingRule = new WIQ(yimei.jss.rule.RuleType.ROUTING);
-//                    generationalRules[0].calcFitness(result.getGenerationalTestFitness(j), null,
-//                            testSet, routingRule, objectives);
-//                }
-//
-//                System.out.println("Generation " + j + ": test fitness = " +
-//                        result.getGenerationalTestFitness(j).fitness());
-//            }
-//
-//            long finish = System.currentTimeMillis();
-//            long duration = finish - start;
-//            System.out.println("Duration = " + duration + " ms.");
+            long start = System.currentTimeMillis();
+
+//            result.validate(objectives);
+
+            for (int j = 0; j < result.getGenerationalRules().size(); j++) {
+                AbstractRule[] generationalRules = result.getGenerationalRules(j);
+                AbstractRule routingRule = (numPopulations == 2) ? generationalRules[1] : new WIQ(yimei.jss.rule.RuleType.ROUTING);
+                generationalRules[0].calcFitness(result.getGenerationalTestFitness(j),null,testSet,routingRule,objectives);
+
+                System.out.println("Generation " + j + ": test fitness = " +
+                        result.getGenerationalTestFitness(j).fitness());
+            }
+
+            long finish = System.currentTimeMillis();
+            long duration = finish - start;
+            System.out.println("Duration = " + duration + " ms.");
 
             testResults.add(result);
         }
@@ -158,7 +156,6 @@ public class RuleTest {
                     } else {
                         seqRule = rules[0];
                     }
-
 
                     UniqueTerminalsGatherer gatherer = new UniqueTerminalsGatherer();
                     int numUniqueTerminalsSeq = seqRule.getGPTree().child.numNodes(gatherer);
@@ -231,7 +228,9 @@ public class RuleTest {
         idx ++;
 		int numObjectives = Integer.valueOf(args[idx]);
 		idx ++;
-		RuleTest ruleTest = new RuleTest(trainPath, ruleType, numRuns, testScenario, testSetName, numPopulations);
+        boolean wasSurrogate = Boolean.valueOf((args[idx]));
+        idx ++;
+        RuleTest ruleTest = new RuleTest(trainPath, ruleType, numRuns, testScenario, testSetName, numPopulations, wasSurrogate);
 		for (int i = 0; i < numObjectives; i++) {
 			ruleTest.addObjective(args[idx]);
 			idx ++;
