@@ -26,6 +26,16 @@ public class ContributionClusteringStrategy extends ContributionSelectionStrateg
         int[][] instanceIDs = new int[selIndis.size()][BBs.size()];
         Instances data = convertMatrixToWeka(contributions, instanceIDs);
 
+        if (data.numInstances() == 0) {
+            //no positive contributions
+            for (int s = 0; s < selIndis.size(); s++) {
+                for (int i = 0; i < BBs.size(); i++) {
+                    BBVotingWeightStats.get(i).addValue(0);
+                }
+            }
+            return;
+        }
+
         String[] options = new String[5];
         options[0] = "-I"; // max. iterations
         options[1] = "100";

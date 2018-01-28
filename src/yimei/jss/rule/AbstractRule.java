@@ -105,13 +105,13 @@ public abstract class AbstractRule {
             for (int i = 0; i < objectives.size(); i++) {
                 double normObjValue = simulation.objectiveValue(objectives.get(i))
                         / schedulingSet.getObjectiveLowerBound(i, col);
-                fitnesses[i] += normObjValue;
                 for (WorkCenter w: simulation.getSystemState().getWorkCenters()) {
                     if (w.numOpsInQueue() > 500) {
                         //this was a bad run
                         normObjValue = Double.MAX_VALUE;
                     }
                 }
+                fitnesses[i] += normObjValue;
             }
 
             col++;
