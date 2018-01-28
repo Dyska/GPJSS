@@ -188,11 +188,11 @@ public class FeatureUtil {
         Ignorer ignorer = ((FeatureIgnorable)state).getIgnorer();
 
         MultiObjectiveFitness fit1 = (MultiObjectiveFitness) indi.fitness;
-        MultiObjectiveFitness retestFitness = (MultiObjectiveFitness) fit1.clone();
+        //MultiObjectiveFitness retestFitness = (MultiObjectiveFitness) fit1.clone();
         MultiObjectiveFitness fit2 = (MultiObjectiveFitness) fit1.clone();
 
         GPRule rule = new GPRule(ruleType,(GPTree)indi.trees[0].clone());
-        GPRule originalRule = new GPRule(ruleType,(GPTree)indi.trees[0].clone());
+        //GPRule originalRule = new GPRule(ruleType,(GPTree)indi.trees[0].clone());
         rule.ignore(feature, ignorer);
 
         int numSubPops;
@@ -205,8 +205,8 @@ public class FeatureUtil {
 
         Fitness[] fitnesses = new Fitness[numSubPops];
         GPRule[] rules = new GPRule[numSubPops];
-        Fitness[] originalFitnesses = new Fitness[numSubPops];
-        GPRule[] originalRules = new GPRule[numSubPops];
+//        Fitness[] originalFitnesses = new Fitness[numSubPops];
+//        GPRule[] originalRules = new GPRule[numSubPops];
         int index = 0;
         if (ruleType == RuleType.ROUTING) {
             index = 1;
@@ -233,10 +233,10 @@ public class FeatureUtil {
         //as the CCGP evaluation model is expecting this
         fitnesses[index] = fit2;
         rules[index] = rule;
-        originalFitnesses[index] = retestFitness;
-        originalRules[index] = originalRule;
+//        originalFitnesses[index] = retestFitness;
+//        originalRules[index] = originalRule;
 
-        problem.getEvaluationModel().evaluate(Arrays.asList(originalFitnesses), Arrays.asList(originalRules), state);
+        //problem.getEvaluationModel().evaluate(Arrays.asList(originalFitnesses), Arrays.asList(originalRules), state);
         problem.getEvaluationModel().evaluate(Arrays.asList(fitnesses), Arrays.asList(rules), state);
 //        if (fit1.fitness() != retestFitness.fitness()) {
 //            //fit1 = 0.9305136256459143

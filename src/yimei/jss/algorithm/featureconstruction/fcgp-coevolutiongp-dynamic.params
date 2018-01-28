@@ -9,7 +9,7 @@ eval =                                  yimei.jss.niching.MultiPopCoevolutionary
 eval.problem =                          yimei.jss.ruleoptimisation.RuleCoevolutionProblem
 eval.problem.data =                     yimei.jss.gp.data.DoubleData
 eval.problem.type =                     rosenbrock
-eval.problem.eval-model =               yimei.jss.ruleevaluation.MultipleRuleEvaluationModel
+eval.problem.eval-model =               yimei.jss.ruleevaluation.MultipleRuleHalfShopEvaluationModel
 eval.problem.eval-model.objectives =    1
 eval.problem.eval-model.objectives.0 =  mean-flowtime
 eval.problem.eval-model.rotate-sim-seed = true
@@ -26,7 +26,7 @@ eval.subpop.0.select-current =          ec.select.RandomSelection
 eval.subpop.1.select-current =          ec.select.RandomSelection
 eval.select-prev =                      ec.select.RandomSelection
 
-generations=                            51
+generations=                            102
 quit-on-run-complete =                  false
 select.tournament.size =                2
 pop.subpops =                           2
@@ -284,8 +284,9 @@ gp.fs.1.func.6.nc =                     nc2
 pre-generations =                       50
 pop-adapt-frac-elites =                 0
 pop-adapt-frac-adapted =                0.1
-feature-selection-adapt-population =    false
+feature-construction-adapt-population = true
 terminals-from =                        relative
 ignorer =                               yimei.jss.feature.ignore.SimpleIgnorer
-
+feature-construction-prefiltering = true
+feature-construction-timing = false
 

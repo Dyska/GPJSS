@@ -73,13 +73,13 @@ public abstract class AbstractRule {
         return matrix;
     }
 
-    public void calcFitness(Fitness fitness, EvolutionState state,
+    public double[] calcFitness(Fitness fitness, EvolutionState state,
                             SchedulingSet schedulingSet, AbstractRule otherRule,
                             List<Objective> objectives) {
         //whenever fitness is calculated, need a routing rule and a sequencing rule
         if (this.getType() == otherRule.getType()) {
             System.out.println("We need one routing rule and one sequencing rule, not 2 "+otherRule.getType()+" rules.");
-            return;
+            return null;
         }
         AbstractRule routingRule;
         AbstractRule sequencingRule;
@@ -103,11 +103,15 @@ public abstract class AbstractRule {
             simulation.rerun();
 
             for (int i = 0; i < objectives.size(); i++) {
-//                System.out.println("Makespan: "+simulation.objectiveValue(objectives.get(i)));
-//                System.out.println("Benchmark makespan: "+schedulingSet.getObjectiveLowerBound(i, col));
                 double normObjValue = simulation.objectiveValue(objectives.get(i))
                         / schedulingSet.getObjectiveLowerBound(i, col);
                 fitnesses[i] += normObjValue;
+                for (WorkCenter w: simulation.getSystemState().getWorkCenters()) {
+                    if (w.numOpsInQueue() > 500) {
+                        //this was a bad run
+                        normObjValue = Double.MAX_VALUE;
+                    }
+                }
             }
 
             col++;
@@ -132,6 +136,7 @@ public abstract class AbstractRule {
         }
         MultiObjectiveFitness f = (MultiObjectiveFitness) fitness;
         f.setObjectives(state, fitnesses);
+        return fitnesses;
     }
 
     public OperationOption priorOperation(SequencingDecisionSituation sequencingDecisionSituation) {

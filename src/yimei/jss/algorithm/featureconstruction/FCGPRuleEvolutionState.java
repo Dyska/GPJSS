@@ -19,6 +19,7 @@ import yimei.jss.gp.TerminalsChangable;
 import yimei.jss.gp.terminal.BuildingBlock;
 import yimei.jss.jobshop.SchedulingSet;
 import yimei.jss.niching.ClearingEvaluator;
+import yimei.jss.niching.MultiPopCoevolutionaryClearingEvaluator;
 import yimei.jss.rule.RuleType;
 import yimei.jss.rule.operation.evolved.GPRule;
 import yimei.jss.ruleevaluation.SimpleEvaluationModel;
@@ -93,6 +94,9 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
         if (generation == preGenerations) {
             evaluator.evaluatePopulation(this);
 
+            String bbSelectionStrategy = parameters.getString(new Parameter("bbSelectionStrategy"),null);
+            String contributionSelectionStrategy = parameters.getString(
+                    new Parameter("contributionSelectionStrategy"),null);
             for (int i = 0; i < population.subpops.length; ++i) {
                 Individual[] individuals = population.subpops[i].individuals;
 
@@ -111,61 +115,64 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 System.out.println("Feature construction analysis being performed for "
                         +FeatureUtil.ruleTypes[i]+" population.");
 
-                String bbSelectionStrategy = parameters.getString(new Parameter("bbSelectionStrategy"),null);
-                String contributionSelectionStrategy = parameters.getString(
-                        new Parameter("contributionSelectionStrategy"),null);
-
-                if (doTimingTest) {
-                    boolean filtering = true;
-                    long startFiltering = yimei.util.Timer.getCpuTime();
-                    FeatureUtil.featureConstruction(this, selIndis,
-                            FeatureUtil.ruleTypes[i], fitUB, fitLB,
-                            filtering, contributionSelectionStrategy,
-                            bbSelectionStrategy);
-                    long finishFiltering = yimei.util.Timer.getCpuTime();
-                    double durationFiltering = (finishFiltering - startFiltering) / 1000000000;
-
-                    filtering = false;
-                    long startNoFiltering = yimei.util.Timer.getCpuTime();
-                    FeatureUtil.featureConstruction(this, selIndis,
-                            FeatureUtil.ruleTypes[i], fitUB, fitLB,
-                            filtering, contributionSelectionStrategy,
-                            bbSelectionStrategy);
-                    long finishNoFiltering = yimei.util.Timer.getCpuTime();
-                    double durationNoFiltering = (finishNoFiltering - startNoFiltering) / 1000000000;
-
-                    System.out.println("FC took "+durationFiltering+" seconds with filtering, "+durationNoFiltering+" seconds without.");
-                    //TODO: Output this to a file maybe... or just analyse the "e"/"o" file for results actually
-
-                    return 0;
-                }
+//                if (doTimingTest) {
+//                    boolean filtering = true;
+//                    long startFiltering = yimei.util.Timer.getCpuTime();
+//                    FeatureUtil.featureConstruction(this, selIndis,
+//                            FeatureUtil.ruleTypes[i], fitUB, fitLB,
+//                            filtering, contributionSelectionStrategy,
+//                            bbSelectionStrategy);
+//                    long finishFiltering = yimei.util.Timer.getCpuTime();
+//                    double durationFiltering = (finishFiltering - startFiltering) / 1000000000;
+//
+//                    filtering = false;
+//                    long startNoFiltering = yimei.util.Timer.getCpuTime();
+//                    FeatureUtil.featureConstruction(this, selIndis,
+//                            FeatureUtil.ruleTypes[i], fitUB, fitLB,
+//                            filtering, contributionSelectionStrategy,
+//                            bbSelectionStrategy);
+//                    long finishNoFiltering = yimei.util.Timer.getCpuTime();
+//                    double durationNoFiltering = (finishNoFiltering - startNoFiltering) / 1000000000;
+//
+//                    System.out.println("FC took "+durationFiltering+" seconds with filtering, "+durationNoFiltering+" seconds without.");
+//                    //TODO: Output this to a file maybe... or just analyse the "e"/"o" file for results actually
+//
+//                    return 0;
+//                }
 
                 GPNode[] features = FeatureUtil.featureConstruction(this, selIndis,
                                 FeatureUtil.ruleTypes[i], fitUB, fitLB,
                         doFiltering, contributionSelectionStrategy,
                         bbSelectionStrategy);
-                if (features.length == 0 && !doFiltering) {
-                    //used for testing purposes
-                    return 0;
-                }
+//                if (features.length == 0 && !doFiltering) {
+//                    //used for testing purposes
+//                    return 0;
+//                }
 
                 if (doAdapt) {
                     addTerminals(features,i);
-
-                    //stop clearing individuals
-                    ((ClearingEvaluator)evaluator).setClear(false);
-                    //begin using full scheduling set, not the surrogate set
-                    ((Surrogate)((RuleOptimizationProblem) evaluator.p_problem)
-                            .getEvaluationModel()).useOriginal();
 
                     //now need to empty population and begin from scratch
                     if (statistics instanceof SimpleStatistics) {
                         ((SimpleStatistics) statistics).best_of_run[i] = null;
                     }
-                    population.clear();
-                    output.message("Initializing Generation 0");
-                    population = initializer.initialPopulation(this, 0); // unthreaded
                 }
+            }
+            if (doAdapt) {
+                //stop clearing individuals
+                if (evaluator instanceof ClearingEvaluator) {
+                    ((ClearingEvaluator)evaluator).setClear(false);
+                } else {
+                    ((MultiPopCoevolutionaryClearingEvaluator)evaluator).setClear(false);
+                }
+
+                //begin using full scheduling set, not the surrogate set
+                ((Surrogate)((RuleOptimizationProblem) evaluator.p_problem)
+                        .getEvaluationModel()).useOriginal();
+
+                population.clear();
+                output.message("Initializing Generation 0");
+                population = initializer.initialPopulation(this, 0); // unthreaded
             }
         }
         if (generation > 0) {

@@ -32,7 +32,8 @@ public class GPMain {
 
                     //Calling -jar GPJSS-FC.jar -file params/fcgp-simplegp-dynamic.params -p eval.problem.eval-model.sim-models.0.util-level=0.95 -p eval.problem.eval-model.objectives.0=max-flowtime -p contributionSelectionStrategy=2-Clustering -p bbSelectionStrategy=2-Clustering -p seed.0=13 -p stat.file=job.13.out.stat
 
-                    gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/featureconstruction/fcgp-simplegp-dynamic.params");
+                    //gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/featureconstruction/fcgp-simplegp-dynamic.params");
+                    gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/featureconstruction/fcgp-coevolutiongp-dynamic.params");
                     //gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp-dynamic.params");
                     //gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/simplegp/simplegp-dynamic.params");
                     gpRunArgs.add("-p");

@@ -601,7 +601,6 @@ public class FCMain {
         String workingDirectory = (new File("")).getAbsolutePath();
         workingDirectory += "/grid_results/dynamic/raw/";
         workingDirectory += directory;
-        System.out.println(workingDirectory);
 
         List<Path> directoryNames = getDirectoryNames(new ArrayList(),Paths.get(workingDirectory),".out.stat");
         for (Path directoryPath: directoryNames) {

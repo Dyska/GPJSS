@@ -22,7 +22,7 @@ import java.util.List;
 /**
  * Created by dyska on 4/07/17.
  */
-public class MultipleRuleEvaluationModel extends AbstractEvaluationModel{
+public class MultipleRuleEvaluationModel extends AbstractEvaluationModel {
 
     /**
      * The starting seed of the simulation models.
@@ -144,57 +144,10 @@ public class MultipleRuleEvaluationModel extends AbstractEvaluationModel{
         AbstractRule sequencingRule = rules.get(0);
         AbstractRule routingRule = rules.get(1);
 
-        //code taken from Abstract Rule
-
-        double[] fitnesses = new double[objectives.size()];
-
-        List<Simulation> simulations = schedulingSet.getSimulations();
-        int col = 0;
-
-        for (int j = 0; j < simulations.size(); j++) {
-            Simulation simulation = simulations.get(j);
-            simulation.setSequencingRule(sequencingRule);
-            simulation.setRoutingRule(routingRule);
-
-            simulation.run();
-
-            for (int i = 0; i < objectives.size(); i++) {
-                double normObjValue = simulation.objectiveValue(objectives.get(i))
-                        / schedulingSet.getObjectiveLowerBound(i, col);
-                for (WorkCenter w: simulation.getSystemState().getWorkCenters()) {
-                    if (w.numOpsInQueue() > 500) {
-                        //this was a bad run
-                        normObjValue = Double.MAX_VALUE;
-                    }
-                }
-                fitnesses[i] += normObjValue;
-            }
-
-            col++;
-
-            for (int k = 1; k < schedulingSet.getReplications().get(j); k++) {
-                simulation.rerun();
-
-                for (int i = 0; i < objectives.size(); i++) {
-                    double normObjValue = simulation.objectiveValue(objectives.get(i))
-                            / schedulingSet.getObjectiveLowerBound(i, col);
-                    fitnesses[i] += normObjValue;
-                }
-
-                col++;
-            }
-
-            simulation.reset();
-        }
-
-        for (int i = 0; i < fitnesses.length; i++) {
-            fitnesses[i] /= col;
-        }
-
-        for (Fitness fitness: currentFitnesses) {
-            MultiObjectiveFitness f = (MultiObjectiveFitness) fitness;
-            f.setObjectives(state, fitnesses);
-        }
+        double[] fitnesses = sequencingRule.calcFitness(currentFitnesses.get(0),state,schedulingSet,routingRule,objectives);
+        //sequencing rule fitness should be updated already, still need to update routing rule fitness
+        MultiObjectiveFitness f = (MultiObjectiveFitness) currentFitnesses.get(1); //get routing rule fitness
+        f.setObjectives(state, fitnesses);
     }
 
     @Override

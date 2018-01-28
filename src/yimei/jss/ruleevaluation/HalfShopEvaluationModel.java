@@ -73,16 +73,10 @@ public class HalfShopEvaluationModel extends SimpleEvaluationModel implements Su
         }
         AbstractRule rule = rules.get(0);
         Fitness fitness = fitnesses.get(0);
-        AbstractRule routingRule = null;
 
-        if (useSurrogate) {
-            routingRule = surrogateSet.getSimulations().get(0).getRoutingRule();
-            rule.calcFitness(fitness, state, surrogateSet, routingRule, objectives);
-        }
-        else {
-            routingRule = schedulingSet.getSimulations().get(0).getRoutingRule();
-            rule.calcFitness(fitness, state, schedulingSet, routingRule, objectives);
-        }
+        SchedulingSet set = useSurrogate ? surrogateSet : schedulingSet;
+        AbstractRule routingRule = set.getSimulations().get(0).getRoutingRule();
+        rule.calcFitness(fitness, state, set, routingRule, objectives);
     }
 
     @Override
