@@ -170,13 +170,13 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
                 ((Surrogate)((RuleOptimizationProblem) evaluator.p_problem)
                         .getEvaluationModel()).useOriginal();
 
-                population.clear();
-                output.message("Initializing Generation 0");
-                population = initializer.initialPopulation(this, 0); // unthreaded
+                //population.clear();
+                //output.message("Initializing Generation 0");
+                //population = initializer.initialPopulation(this, 0); // unthreaded
             }
         }
         if (generation > 0) {
-            output.message("Generation " + generation%preGenerations);
+            output.message("Generation " + generation);
         }
 
         // EVALUATION

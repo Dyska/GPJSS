@@ -123,7 +123,7 @@ public abstract class Simulation {
             nextEvent.trigger(this);
 
             for (WorkCenter w: systemState.getWorkCenters()) {
-                if (w.numOpsInQueue() > 500) {
+                if (w.numOpsInQueue() > 100) {
                     systemState.setClockTime(Double.MAX_VALUE);
                     eventQueue.clear();
                 }

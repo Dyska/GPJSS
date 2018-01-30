@@ -216,7 +216,7 @@ public class SimpleBreeder extends Breeder
                 return newpop.subpops[subpopulation].individuals.length - (numElites(state, subpopulation)); // we're breeding population, so elitism may have happened
             } else {
                 //storing collaborators also
-                return newpop.subpops[subpopulation].individuals.length - (2*numElites(state, subpopulation)); // we're breeding population, so elitism may have happened
+                return newpop.subpops[subpopulation].individuals.length - (numElites(state, subpopulation)); // we're breeding population, so elitism may have happened
             }
         }
 

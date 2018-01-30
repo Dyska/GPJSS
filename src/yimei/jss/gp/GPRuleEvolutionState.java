@@ -221,13 +221,7 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
 			double duration = (finish - start) / 1000000000;
 			genTimes.add(duration);
 			totalTime += duration;
-
-            if (this instanceof FCGPRuleEvolutionState) {
-                int preGenerations = ((FCGPRuleEvolutionState)this).preGenerations;
-                output.message("Generation " + (generation-1)%preGenerations + " elapsed " + duration + " seconds.");
-            } else {
-                output.message("Generation " + (generation-1) + " elapsed " + duration + " seconds.");
-            }
+			output.message("Generation " + (generation-1) + " elapsed " + duration + " seconds.");
         }
 
 		output.message("The whole program elapsed " + totalTime + " seconds.");

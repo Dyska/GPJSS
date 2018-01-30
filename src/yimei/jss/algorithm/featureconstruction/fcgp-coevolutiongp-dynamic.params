@@ -19,7 +19,7 @@ eval.problem.eval-model.sim-models.0.num-jobs = 5000
 eval.problem.eval-model.sim-models.0.warmup-jobs = 1000
 eval.num-shuffled=			            0
 eval.num-current=                       0
-eval.num-elites =                       4
+eval.num-elites =                       1
 eval.num-prev =                         0
 eval.select-current =                   ec.select.RandomSelection
 eval.subpop.0.select-current =          ec.select.RandomSelection
@@ -28,93 +28,70 @@ eval.select-prev =                      ec.select.RandomSelection
 
 generations=                            102
 quit-on-run-complete =                  false
-select.tournament.size =                2
-pop.subpops =                           2
-pop.default-subpop =			        0
 
-pop.subpop.0 =                          ec.Subpopulation
-pop.subpop.0.duplicate-retries =        2
-pop.subpop.0.size =                     512
-pop.subpop.0.species =                  ec.gp.GPSpecies
-pop.subpop.0.species.crossover-type =   one
-pop.subpop.0.species.genome-size =      10
-pop.subpop.0.species.fitness =          yimei.jss.niching.ClearingMultiObjectiveFitness
+pop = ec.Population
+pop.subpops = 2
+pop.subpop.0 = ec.Subpopulation
+pop.subpop.0.size = 30
+pop.subpop.1 = ec.Subpopulation
+pop.subpop.1.size = 30
+
+breed.elite.0 = 10
+breed.elite.1 = 10
+
+# ==============================
+# GP general parameters
+# ==============================
+
+# GP population parameters
+pop.subpop.0.species = ec.gp.GPSpecies
+pop.subpop.0.species.ind = ec.gp.GPIndividual
+pop.subpop.0.species.ind.numtrees = 1
+pop.subpop.0.species.ind.tree.0 = ec.gp.GPTree
+pop.subpop.0.species.ind.tree.0.tc = tc0
+
+pop.subpop.0.species.fitness = yimei.jss.niching.ClearingMultiObjectiveFitness
 pop.subpop.0.species.fitness.num-objectives = 1
 pop.subpop.0.species.fitness.maximize = false
-pop.subpop.0.species.ind =              ec.gp.GPIndividual
-pop.subpop.0.species.ind.numtrees =     1
-pop.subpop.0.species.ind.tree.0 =       ec.gp.GPTree
-pop.subpop.0.species.ind.tree.0.tc =    tc0
-pop.subpop.0.species.min-gene =         -2.048
-pop.subpop.0.species.max-gene =         2.048
-pop.subpop.0.species.pipe =             ec.breed.MultiBreedingPipeline
-pop.subpop.0.species.pipe.source.0 =    ec.gp.koza.CrossoverPipeline
-pop.subpop.0.species.pipe.source.0.prob = 0.80
-pop.subpop.0.species.pipe.source.0.source.0 = ec.select.TournamentSelection
-pop.subpop.0.species.pipe.source.0.source.1 = same
-pop.subpop.0.species.pipe.num-sources = 3
-pop.subpop.0.species.mutation-type =    gauss
-pop.subpop.0.species.mutation-stdev =   0.23
-pop.subpop.0.species.mutation-type = 	polynomial
-pop.subpop.0.species.mutation-distribution-index = 21
-pop.subpop.0.species.alternative-polynomial-version = true
-pop.subpop.0.species.mutation-bounded = true
+pop.subpop.0.duplicate-retries = 100
 
-pop.subpop.1 =                          ec.Subpopulation
-pop.subpop.1.duplicate-retries =        2
-pop.subpop.1.size =                     512
-pop.subpop.1.species =                  ec.gp.GPSpecies
-pop.subpop.1.species.crossover-type =   one
-pop.subpop.1.species.genome-size =      10
-pop.subpop.1.species.fitness =          yimei.jss.niching.ClearingMultiObjectiveFitness
+pop.subpop.1.species = ec.gp.GPSpecies
+pop.subpop.1.species.ind = ec.gp.GPIndividual
+pop.subpop.1.species.ind.numtrees = 1
+pop.subpop.1.species.ind.tree.0 = ec.gp.GPTree
+pop.subpop.1.species.ind.tree.0.tc = tc0
+
+pop.subpop.1.species.fitness = yimei.jss.niching.ClearingMultiObjectiveFitness
 pop.subpop.1.species.fitness.num-objectives = 1
 pop.subpop.1.species.fitness.maximize = false
-pop.subpop.1.species.ind =              ec.gp.GPIndividual
-pop.subpop.1.species.ind.numtrees =     1
-pop.subpop.1.species.ind.tree.0 =       ec.gp.GPTree
-pop.subpop.1.species.ind.tree.0.tc =    tc1
-pop.subpop.1.species.min-gene =         -2.048
-pop.subpop.1.species.max-gene =         2.048
-pop.subpop.1.species.pipe =             ec.breed.MultiBreedingPipeline
-pop.subpop.1.species.pipe.source.0 =    ec.gp.koza.CrossoverPipeline
-pop.subpop.1.species.pipe.source.0.prob = 0.80
-pop.subpop.1.species.pipe.source.0.source.0 = ec.select.TournamentSelection
-pop.subpop.1.species.pipe.source.0.source.1 = same
-pop.subpop.1.species.pipe.num-sources = 3
-pop.subpop.1.species.mutation-type =    gauss
-pop.subpop.1.species.mutation-stdev =   0.23
-pop.subpop.1.species.mutation-type = 	polynomial
-pop.subpop.1.species.mutation-distribution-index = 21
-pop.subpop.1.species.alternative-polynomial-version = true
-pop.subpop.1.species.mutation-bounded = true
+pop.subpop.1.duplicate-retries = 100
 
 # GP initializer
 init = ec.gp.GPInitializer
 
 # GP breeding pipeline
-#pop.subpop.0.species.pipe =            ec.breed.MultiBreedingPipeline
+pop.subpop.0.species.pipe = ec.breed.MultiBreedingPipeline
 pop.subpop.0.species.pipe.generate-max = false
 pop.subpop.0.species.pipe.num-sources = 3
-pop.subpop.0.species.pipe.source.0 =    ec.gp.koza.CrossoverPipeline
+pop.subpop.0.species.pipe.source.0 = ec.gp.koza.CrossoverPipeline
 pop.subpop.0.species.pipe.source.0.prob = 0.80
-pop.subpop.0.species.pipe.source.1 =    ec.gp.koza.MutationPipeline
+pop.subpop.0.species.pipe.source.1 = ec.gp.koza.MutationPipeline
 pop.subpop.0.species.pipe.source.1.prob = 0.15
-pop.subpop.0.species.pipe.source.2 =    ec.breed.ReproductionPipeline
+pop.subpop.0.species.pipe.source.2 = ec.breed.ReproductionPipeline
 pop.subpop.0.species.pipe.source.2.prob = 0.05
 
+pop.subpop.1.species.pipe = ec.breed.MultiBreedingPipeline
 pop.subpop.1.species.pipe.generate-max = false
 pop.subpop.1.species.pipe.num-sources = 3
-pop.subpop.1.species.pipe.source.0 =    ec.gp.koza.CrossoverPipeline
+pop.subpop.1.species.pipe.source.0 = ec.gp.koza.CrossoverPipeline
 pop.subpop.1.species.pipe.source.0.prob = 0.80
-pop.subpop.1.species.pipe.source.1 =    ec.gp.koza.MutationPipeline
+pop.subpop.1.species.pipe.source.1 = ec.gp.koza.MutationPipeline
 pop.subpop.1.species.pipe.source.1.prob = 0.15
-pop.subpop.1.species.pipe.source.2 =    ec.breed.ReproductionPipeline
+pop.subpop.1.species.pipe.source.2 = ec.breed.ReproductionPipeline
 pop.subpop.1.species.pipe.source.2.prob = 0.05
 
 # Selection for reproduction
 breed.reproduce.source.0 =              ec.select.TournamentSelection
-breed.elite.0 =                         1
-breed.elite.1 =                         1
 
 # Koza crossover parameters
 gp.koza.xover.source.0 =                ec.select.TournamentSelection
