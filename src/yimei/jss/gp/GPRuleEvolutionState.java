@@ -60,6 +60,7 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
 
 	public void addTerminals(GPNode[] newTerminals, int subPopNum) {
 		if (newTerminals.length == 0) {
+			System.out.println("No new terminals added to terminal set "+subPopNum+".");
 			return;
 		}
 		GPNode[] existingTerminals = this.terminals[subPopNum];
