@@ -6,6 +6,7 @@ import ec.multiobjective.MultiObjectiveFitness;
 import ec.util.Parameter;
 import yimei.jss.jobshop.SchedulingSet;
 import yimei.jss.rule.AbstractRule;
+import yimei.jss.rule.RuleType;
 import yimei.jss.surrogate.Surrogate;
 
 import java.util.List;
@@ -58,6 +59,13 @@ public class MultipleRuleHalfShopEvaluationModel extends MultipleRuleEvaluationM
 
         AbstractRule sequencingRule = rules.get(0);
         AbstractRule routingRule = rules.get(1);
+
+        //sanity check
+        if (sequencingRule.getType() != RuleType.SEQUENCING || routingRule.getType() != RuleType.ROUTING) {
+            System.out.println("Invalid rule types provided, exiting.");
+            return;
+        }
+
         SchedulingSet set = useSurrogate ? surrogateSet : schedulingSet;
 
         double[] fitnesses = sequencingRule.calcFitness(currentFitnesses.get(0),state,set,routingRule,objectives);
