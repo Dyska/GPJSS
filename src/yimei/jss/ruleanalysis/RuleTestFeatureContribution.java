@@ -33,9 +33,8 @@ public class RuleTestFeatureContribution extends RuleTest {
                                        String testSetName,
                                        List<Objective> objectives,
                                        String featureSetName,
-                                       int numPopulations,
-                                       boolean wasSurrogate) {
-        super(trainPath, ruleType, numRuns, testScenario, testSetName, objectives, numPopulations, wasSurrogate);
+                                       int numPopulations) {
+        super(trainPath, ruleType, numRuns, testScenario, testSetName, objectives, numPopulations);
         this.featureSetName = featureSetName;
     }
 
@@ -45,10 +44,9 @@ public class RuleTestFeatureContribution extends RuleTest {
                                        String testScenario,
                                        String testSetName,
                                        String featureSetName,
-                                       int numPopulations,
-                                       boolean wasSurrogate) {
+                                       int numPopulations) {
         this(trainPath, ruleType, numRuns, testScenario, testSetName,
-                new ArrayList<>(), featureSetName, numPopulations, wasSurrogate);
+                new ArrayList<>(), featureSetName, numPopulations);
     }
 
     public List<GPNode> featuresFromSetName() {
@@ -89,7 +87,7 @@ public class RuleTestFeatureContribution extends RuleTest {
         for (int i = 0; i < numRuns; i++) {
             File sourceFile = new File(trainPath + "job." + i + ".out.stat");
 
-            TestResult result = TestResult.readFromFile(sourceFile, ruleType, numPopulations, wasSurrogate);
+            TestResult result = TestResult.readFromFile(sourceFile, ruleType, numPopulations);
 
             long start = System.currentTimeMillis();
 
@@ -169,8 +167,6 @@ public class RuleTestFeatureContribution extends RuleTest {
         idx ++;
         int numObjectives = Integer.valueOf(args[idx]);
         idx ++;
-        boolean wasSurrogate = Boolean.valueOf(args[idx]);
-        idx ++;
         List<Objective> objectives = new ArrayList<>();
         for (int i = 0; i < numObjectives; i++) {
             objectives.add(Objective.get(args[idx]));
@@ -180,7 +176,7 @@ public class RuleTestFeatureContribution extends RuleTest {
         idx ++;
 
         RuleTestFeatureContribution ruleTest = new RuleTestFeatureContribution(trainPath,
-                ruleType, numRuns, testScenario, testSetName, objectives, featureSetName, numPopulations, wasSurrogate);
+                ruleType, numRuns, testScenario, testSetName, objectives, featureSetName, numPopulations);
 
         ruleTest.writeToCSV();
     }

@@ -26,12 +26,10 @@ public class RuleTest {
     protected String testSetName;
     protected List<Objective> objectives; // The objectives to test.
     protected int numPopulations;
-    protected boolean wasSurrogate;
 
     public RuleTest(String trainPath, RuleType ruleType, int numRuns,
                     String testScenario, String testSetName,
-                    List<Objective> objectives, int numPopulations,
-                    boolean wasSurrogate) {
+                    List<Objective> objectives, int numPopulations) {
         this.trainPath = trainPath;
         this.ruleType = ruleType;
         this.numRuns = numRuns;
@@ -39,12 +37,11 @@ public class RuleTest {
         this.testSetName = testSetName;
         this.objectives = objectives;
         this.numPopulations = numPopulations;
-        this.wasSurrogate = wasSurrogate;
     }
 
     public RuleTest(String trainPath, RuleType ruleType, int numRuns,
-                    String testScenario, String testSetName, int numPopulations, boolean wasSurrogate) {
-        this(trainPath, ruleType, numRuns, testScenario, testSetName, new ArrayList<>(), numPopulations, wasSurrogate);
+                    String testScenario, String testSetName, int numPopulations) {
+        this(trainPath, ruleType, numRuns, testScenario, testSetName, new ArrayList<>(), numPopulations);
     }
 
     public String getTrainPath() {
@@ -69,8 +66,6 @@ public class RuleTest {
         return objectives;
     }
 
-    public boolean getWasSurrogate() {return wasSurrogate; }
-
     public void setObjectives(List<Objective> objectives) {
 		this.objectives = objectives;
 	}
@@ -85,7 +80,7 @@ public class RuleTest {
 
 	public SchedulingSet generateTestSet() {
         return SchedulingSet.generateSet(simSeed, testScenario,
-                testSetName, objectives, 50);
+                testSetName, objectives, 1);
     }
 
 	public void writeToCSV() {
@@ -100,10 +95,10 @@ public class RuleTest {
 
         List<TestResult> testResults = new ArrayList<>();
 
-        for (int i = 2; i < numRuns; i++) {
+        for (int i = 0; i < numRuns; i++) {
             File sourceFile = new File(trainPath + "job." + i + ".out.stat");
 
-            TestResult result = TestResult.readFromFile(sourceFile, ruleType, numPopulations, wasSurrogate);
+            TestResult result = TestResult.readFromFile(sourceFile, ruleType, numPopulations);
 
             File timeFile = new File(trainPath + "job." + i + ".time.csv");
             result.setGenerationalTimeStat(ResultFileReader.readTimeFromFile(timeFile));
@@ -143,7 +138,7 @@ public class RuleTest {
                     MultiObjectiveFitness testFit =
                             (MultiObjectiveFitness)result.getGenerationalTestFitness(j);
                     GPRule[] rules = (GPRule[]) result.getGenerationalRules(j);
-                    GPRule seqRule = null;
+                    GPRule seqRule = rules[0];
                     GPRule routRule = null;
                     if (numPopulations == 2) {
                         if (rules[0].getType() == yimei.jss.rule.RuleType.SEQUENCING) {
@@ -153,8 +148,6 @@ public class RuleTest {
                             seqRule = rules[1];
                             routRule = rules[0];
                         }
-                    } else {
-                        seqRule = rules[0];
                     }
 
                     UniqueTerminalsGatherer gatherer = new UniqueTerminalsGatherer();
@@ -179,18 +172,6 @@ public class RuleTest {
                                 testFit.fitness());
                         writer.newLine();
                     }
-                    else {
-//                        writer.write(i + "," + j + "," +
-//                                rule.getGPTree().child.numNodes(GPNode.NODESEARCH_ALL) + "," +
-//                                numUniqueTerminals + ",");
-
-                        for (int k = 0; k < objectives.size(); k++) {
-                            writer.write(k + "," +
-                                    trainFit.getObjective(k) + "," +
-                                    testFit.getObjective(k) + ",");
-                        }
-                        writer.newLine();
-                    }
                 }
             }
             writer.close();
@@ -203,7 +184,7 @@ public class RuleTest {
     /**
      * Call this main method with several parameters
      *
-     * /home/yskadani/eclipse-workspace/GPJSS/grid_results/dynamic/raw/ccgp/ccgp-0.85-max-flowtime/
+     * /home/yskadani/eclipse-workspace/GPJSS/grid_results/dynamic/raw/ccgp-fc-train/
      * simple-rule
      * 30
      * dynamic-job-shop
@@ -228,9 +209,7 @@ public class RuleTest {
         idx ++;
 		int numObjectives = Integer.valueOf(args[idx]);
 		idx ++;
-        boolean wasSurrogate = Boolean.valueOf((args[idx]));
-        idx ++;
-        RuleTest ruleTest = new RuleTest(trainPath, ruleType, numRuns, testScenario, testSetName, numPopulations, wasSurrogate);
+        RuleTest ruleTest = new RuleTest(trainPath, ruleType, numRuns, testScenario, testSetName, numPopulations);
 		for (int i = 0; i < numObjectives; i++) {
 			ruleTest.addObjective(args[idx]);
 			idx ++;

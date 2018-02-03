@@ -141,8 +141,8 @@ public class TestResult {
 		this.generationalTimeStat = generationalTimeStat;
 	}
 
-	public static TestResult readFromFile(File file, RuleType ruleType, int numPopulations, boolean wasSurrogate) {
-		return ResultFileReader.readTestResultFromFile(file, ruleType, ruleType.isMultiobjective(), numPopulations, wasSurrogate);
+	public static TestResult readFromFile(File file, RuleType ruleType, int numPopulations) {
+		return ResultFileReader.readTestResultFromFile(file, ruleType, ruleType.isMultiobjective(), numPopulations);
 	}
 
 	public void validate(List<Objective> objectives) {

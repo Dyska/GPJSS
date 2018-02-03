@@ -746,7 +746,7 @@ public class FCMain {
             e.printStackTrace();
         }
         //can get rid of first 51 rules
-        rules = rules.subList(51,rules.size());
+        rules = rules.subList(50,rules.size());
         return rules;
     }
 
