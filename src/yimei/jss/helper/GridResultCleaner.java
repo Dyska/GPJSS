@@ -46,22 +46,20 @@ import java.util.List;
  */
 public class GridResultCleaner {
     private static final char DEFAULT_SEPARATOR = ',';
-    private static final String GRID_PATH = "/home/yskadani/eclipse-workspace/GPJSS/grid_results/";
+    private static final String GRID_PATH = (new File("")).getAbsolutePath() + "/grid_results/";
     private String dataPath;
     private String outPath;
     private HashMap<String, Integer> benchmarkMakespans;
-    private boolean doIncludeGenerations;
     private int numPops;
     private boolean isStatic;
-    private boolean isSurrogate;
     private AbstractRule routingRule;
 
-    public GridResultCleaner(String simulationType, String dirName, int numPops, boolean doIncludeGenerations, boolean isSurrogate) {
-        this.dataPath =  GRID_PATH + simulationType + "/raw/" + dirName;
-        this.outPath =  GRID_PATH + simulationType+ "/cleaned/" + dirName;
+    public GridResultCleaner(String simulationType, String dirName, int numPops) {
+        this.dataPath = GRID_PATH + simulationType + "/raw/" +dirName;
+        this.outPath = GRID_PATH + simulationType+ "/cleaned/" + dirName;
+        File targetPath = new File(this.outPath);
+        if (!targetPath.exists()) { targetPath.mkdirs(); }
         this.numPops = numPops;
-        this.doIncludeGenerations = doIncludeGenerations;
-        this.isSurrogate = isSurrogate;
         if (simulationType.toLowerCase() == "static") {
             isStatic = true;
             benchmarkMakespans = InitBenchmarkMakespans();
@@ -70,19 +68,11 @@ public class GridResultCleaner {
         }
     }
 
-    public GridResultCleaner(String simulationType, String dirName, AbstractRule routingRule, int numPops, boolean doIncludeGenerations, boolean isSurrogate) {
-        this.dataPath =  GRID_PATH + simulationType + "/raw/" + dirName;
-        this.outPath =  GRID_PATH + simulationType+ "/cleaned/" + dirName+"/"+routingRule.getName();
-        this.isSurrogate = isSurrogate;
-        this.numPops = numPops;
+    public GridResultCleaner(String simulationType, String dirName, AbstractRule routingRule, int numPops) {
+        this(simulationType,dirName,numPops);
+        //then can overwrite outpath
+        this.outPath += "/"+routingRule.getName();
         this.routingRule = routingRule;
-        this.doIncludeGenerations = doIncludeGenerations;
-        if (simulationType.toLowerCase() == "static") {
-            isStatic = true;
-            benchmarkMakespans = InitBenchmarkMakespans();
-        } else {
-            isStatic = false;
-        }
     }
 
     private HashMap<String, Integer> InitBenchmarkMakespans() {
@@ -141,6 +131,9 @@ public class GridResultCleaner {
         if (fileNames.isEmpty()) {
             //must not be a directory for this file
             return null;
+        }
+        if (fileNames.size() != 30) {
+            System.out.println("Really?");
         }
         HashMap<Integer, Double[]> makespans = new HashMap<Integer, Double[]>();
         //we have a file, and the fitness of all rules evolved from this file is the makespan of that
@@ -229,15 +222,6 @@ public class GridResultCleaner {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if (isSurrogate) {
-            //going to assume that the first half of fitnesses are from surrogate evaluation
-            //note last fitness is best, so remove this with -1
-            int numSurrogates = (bestFitnesses.size()-1)/2;
-            if (numSurrogates != 51) {
-                System.out.println("Unexpected number of surrogate generations, check this out.");
-            }
-            bestFitnesses = bestFitnesses.subList(numSurrogates,bestFitnesses.size());
-        }
 
         return bestFitnesses.toArray(new Double[0]);
     }
@@ -256,6 +240,7 @@ public class GridResultCleaner {
             List<String> headers = new ArrayList<String>();
             //expecting the same number of generations for all seeds, so just get any value
             Double[] entry = makespanMap.get(makespanMap.keySet().iterator().next());
+            System.out.println((entry.length)+" generations.");
             for (int i = 0; i < entry.length-1; ++i) {
                 headers.add("Gen"+i);
             }
@@ -266,6 +251,9 @@ public class GridResultCleaner {
                 List<String> makespanCSV = new ArrayList<String>();
                 String makeSpansString = "";
                 Double[] makespans = makespanMap.get(i);
+                if (makespans.length != (entry.length)) {
+                    System.out.println("Missing entries.");
+                }
                 for (Double makespan: makespans) {
                     makeSpansString += makespan.toString() +",";
                 }
@@ -328,13 +316,10 @@ public class GridResultCleaner {
     public static void main(String args[]) {
         String simulationType = "dynamic";
         //String simulationType = "static";
-        String directoryName = "simple-fc-train";
+        String directoryName = "simple-fc-50-50";
         int numPopulations = 1;
-        boolean doIncludeGenerations = true;
-        boolean isSurrogate = true;
 
-        GridResultCleaner grc = new GridResultCleaner(simulationType,directoryName,
-                numPopulations,doIncludeGenerations,isSurrogate);
+        GridResultCleaner grc = new GridResultCleaner(simulationType,directoryName,numPopulations);
         grc.cleanResults();
     }
 }

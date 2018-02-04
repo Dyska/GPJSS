@@ -22,7 +22,7 @@ import static yimei.jss.helper.GridResultCleaner.writeLine;
  */
 public class TestResultCleaner {
     private static final char DEFAULT_SEPARATOR = ',';
-    private static final String GRID_PATH = "/Users/dyska/Desktop/Uni/COMP489/GPJSS/grid_results/";
+    private static final String GRID_PATH = (new File("")).getAbsolutePath()+"/grid_results/";
     private String dataPath;
     private String outPath;
     private boolean doOutput;
@@ -35,24 +35,20 @@ public class TestResultCleaner {
 
     public static void main(String[] args) {
         //Just for dynamic results
-        //String dirName = "simple_modified_terminal_final";
-        //String dirName = "coevolution_modified_terminal_final";
-        String dirName1 = "coevolution-fixed";
-        String dirName2 = "coevolution_modified_terminal_final";
+        String dirName = "simple-fc";
 
         boolean doOutput = false;
 
-        String dataPath1 = GRID_PATH + "dynamic/test/" + dirName1;
-        String outPath1 =  GRID_PATH + "dynamic/cleaned/" + dirName1+"_test";
+        String dataPath = GRID_PATH + "dynamic/test/" + dirName;
+        String outPath =  GRID_PATH + "dynamic/cleaned/" + dirName+"_test";
+        //String dataPath2 = GRID_PATH + "dynamic/test/" + dirName2;
+        //String outPath2 =  GRID_PATH + "dynamic/cleaned/" + dirName2+"_test";
 
-        String dataPath2 = GRID_PATH + "dynamic/test/" + dirName2;
-        String outPath2 =  GRID_PATH + "dynamic/cleaned/" + dirName2+"_test";
-
-        TestResultCleaner t1 = new TestResultCleaner(dataPath1, outPath1, doOutput);
+        TestResultCleaner t1 = new TestResultCleaner(dataPath, outPath, doOutput);
         t1.readInFile();
 
-        TestResultCleaner t2 = new TestResultCleaner(dataPath2, outPath2, doOutput);
-        t2.readInFile();
+//        TestResultCleaner t2 = new TestResultCleaner(dataPath2, outPath2, doOutput);
+//        t2.readInFile();
     }
 
     public void readInFile() {
@@ -61,23 +57,26 @@ public class TestResultCleaner {
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(dataPath))) {
             for (Path path: stream) {
                 if (path.toFile().isDirectory()) {
+                    File file = new File(path.toFile().toString()+"/test/");
+                    path = file.toPath();
                     List<String> fileNames = getFileNames(new ArrayList(), path, ".csv");
                     for (String fileName: fileNames) {
                         double[][] fitnesses = parseFitnesses(fileName.toString());
-                        if (doOutput) {
-                            writeToFile(fileName, fitnesses);
-                        } else {
-                            //print best fitnesses of each generation
-                            String folderName =
-                                    fileName.substring(dataPath.length()+1).split("/")[0]+".csv";
-                            System.out.println("Fitnesses for "+folderName);
-                            String outputString = "";
-                            for (int i = 0; i < 30; ++i) {
-                                outputString += fitnesses[i][51] + ",";
-                            }
-                            System.out.println(outputString.substring(0,outputString.length()-1));
-                            System.out.println();
-                        }
+//                        if (doOutput) {
+//                            writeToFile(fileName, fitnesses);
+//                        } else {
+//                            //print best fitnesses of each generation
+//                            String folderName =
+//                                    fileName.substring(dataPath.length()+1).split("/")[0]+".csv";
+//                            System.out.println("Fitnesses for "+folderName);
+//                            String outputString = "";
+//                            for (int i = 0; i < 30; ++i) {
+//                                outputString += fitnesses[i][51] + ",";
+//                            }
+//                            System.out.println(outputString.substring(0,outputString.length()-1));
+//                            System.out.println();
+//                        }
+
                     }
                 }
             }
@@ -87,7 +86,7 @@ public class TestResultCleaner {
     }
 
     public double[][] parseFitnesses(String fileName) {
-        double[][] fitnesses = new double[30][52]; //51 generations plus best
+        double[][] fitnesses = new double[30][103]; //51 generations plus best
         BufferedReader br = null;
 
         try {
@@ -96,7 +95,7 @@ public class TestResultCleaner {
             //may be multiple fitnesses per generation if numpops > 1
             br.readLine(); //skip headers
             int seed = 0;
-            double[] testFitnesses = new double[52];
+            double[] testFitnesses = new double[103];
             double bestFitness = Double.MAX_VALUE;
             while ((sCurrentLine = br.readLine()) != null) {
                 String[] components = sCurrentLine.split(String.valueOf(DEFAULT_SEPARATOR));
@@ -105,10 +104,10 @@ public class TestResultCleaner {
                 int gen = Integer.parseInt(components[1]);
                 double testFitness = Double.parseDouble(components[8]);
                 if (seed != run) {
-                    testFitnesses[51] = bestFitness;
+                    testFitnesses[102] = bestFitness;
                     fitnesses[seed] = testFitnesses;
                     seed = run;
-                    testFitnesses = new double[52];
+                    testFitnesses = new double[103];
                     bestFitness = Double.MAX_VALUE;
                 }
 
@@ -119,14 +118,23 @@ public class TestResultCleaner {
             }
 
             //write final seed's values
-            testFitnesses[51] = bestFitness;
+            testFitnesses[102] = bestFitness;
             fitnesses[seed] = testFitnesses;
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
+        boolean broken = false;
+        for (int i = 0; i < 30; ++i) {
+            for (int j = 0; j < 103; ++j) {
+                if (fitnesses[i][j] == 0.0) {
+                    broken = true;
+                }
+            }
+        } if (broken) {
+            System.out.println("Error with file "+fileName);
+        }
         return fitnesses;
     }
 

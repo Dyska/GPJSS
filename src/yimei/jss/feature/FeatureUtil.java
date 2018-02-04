@@ -514,11 +514,11 @@ public class FeatureUtil {
                 BBContributionStats.get(i).addValue(c);
             }
         }
-        if (!preFiltering) {
-            //for testing purposes - will remove this
-            outputState(state,selIndis,BBs,contributions,votingWeightStat,ruleType);
-            return new GPNode[0];
-        }
+//        if (!preFiltering) {
+//            //for testing purposes - will remove this
+//            outputState(state,selIndis,BBs,contributions,votingWeightStat,ruleType);
+//            return new GPNode[0];
+//        }
 
         //select which contributions to count
         contributionStrategy.selectContributions(contributions,selIndis,BBs,BBVotingWeightStats,votingWeightStat);
