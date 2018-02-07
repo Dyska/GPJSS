@@ -2,8 +2,8 @@ library(ggplot2)
 
 setwd("/Users/dyska/Desktop/Uni/COMP489/GPJSS/grid_results/dynamic/test")
 
-algos = c("simple_modified_terminal_final", "coevolution_modified_terminal_final")
-algo.names <- c("SimpleGP","CCGP")
+algos = c("simple-fc")
+algo.names <- c("SimpleGP")
 objectives <- rep(c("mean-flowtime", "max-flowtime", "mean-weighted-flowtime"), 2)
 utils <- c(rep(0.85, 3), rep(0.95, 3))
 ddfactors <- rep(4, 6)
