@@ -18,6 +18,7 @@ import yimei.jss.gp.GPRuleEvolutionState;
 import yimei.jss.gp.TerminalsChangable;
 import yimei.jss.gp.terminal.BuildingBlock;
 import yimei.jss.jobshop.SchedulingSet;
+import yimei.jss.niching.ClearableEvaluator;
 import yimei.jss.niching.ClearingEvaluator;
 import yimei.jss.niching.MultiPopCoevolutionaryClearingEvaluator;
 import yimei.jss.rule.RuleType;
@@ -51,10 +52,10 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
     private double fracElites;
     private double fracAdapted;
 
-    private double fitUB = Double.NEGATIVE_INFINITY;
-    private double fitLB = Double.POSITIVE_INFINITY;
-    private double worstFitnesses[] = null;
-    private double bestFitnesses[] = null;
+    protected double fitUB = Double.NEGATIVE_INFINITY;
+    protected double fitLB = Double.POSITIVE_INFINITY;
+    protected double worstFitnesses[] = null;
+    protected double bestFitnesses[] = null;
     private boolean doAdapt;
     private boolean doFiltering;
     private boolean doTimingTest;
@@ -160,11 +161,7 @@ public class FCGPRuleEvolutionState extends GPRuleEvolutionState implements Term
             }
             if (doAdapt) {
                 //stop clearing individuals
-                if (evaluator instanceof ClearingEvaluator) {
-                    ((ClearingEvaluator)evaluator).setClear(false);
-                } else {
-                    ((MultiPopCoevolutionaryClearingEvaluator)evaluator).setClear(false);
-                }
+                if (evaluator instanceof ClearableEvaluator) { ((ClearableEvaluator)evaluator).setClear(false); }
 
                 //begin using full scheduling set, not the surrogate set
                 ((Surrogate)((RuleOptimizationProblem) evaluator.p_problem)

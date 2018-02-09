@@ -43,8 +43,8 @@ public class TopKStrategy extends BBSelectionStrategy {
             BuildingBlock bb = buildingBlocks.get(i);
             selBBs.add(bb.getBB());
             selBBsVotingWeights.add(bb.getScore());
-            System.out.println(bb.getBB().makeCTree(false,true,
-                    true) +" - recieved: "+bb.getScore()+" voting weight.");
+//            System.out.println(bb.getBB().makeCTree(false,true,
+//                    true) +" - recieved: "+bb.getScore()+" voting weight.");
         }
     }
 

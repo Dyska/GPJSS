@@ -24,8 +24,8 @@ public class BBStaticThresholdStrategy extends BBSelectionStrategy {
             if (votingWeight > threshold) {
                 selBBs.add(BBs.get(i));
                 selBBsVotingWeights.add(votingWeight);
-                System.out.println(BBs.get(i).makeCTree(false,true,
-                        true) +" - recieved: "+votingWeight+" voting weight.");
+//                System.out.println(BBs.get(i).makeCTree(false,true,
+//                        true) +" - recieved: "+votingWeight+" voting weight.");
             }
         }
     }

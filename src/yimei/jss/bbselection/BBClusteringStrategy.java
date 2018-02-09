@@ -61,8 +61,8 @@ public class BBClusteringStrategy extends BBSelectionStrategy {
                 selBBs.add(bb);
                 selBBsVotingWeights.add(votes);
 
-                System.out.println(bb.makeCTree(false,true,
-                        true) +" - selected with: "+votes+".");
+//                System.out.println(bb.makeCTree(false,true,
+//                        true) +" - selected with: "+votes+".");
             }
         }
     }

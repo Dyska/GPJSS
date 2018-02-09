@@ -8,15 +8,15 @@ import java.util.List;
 /**
  * Created by dyska on 13/01/18.
  */
-public class StaticProportionTotalVotingWeight extends BBSelectionStrategy {
+public class BBStaticProportionTVW extends BBSelectionStrategy {
     private double totalVotingWeight;
     private double proportion;
 
-    public StaticProportionTotalVotingWeight(double proportion) {
+    public BBStaticProportionTVW(double proportion) {
         this.proportion = proportion;
     }
 
-    public StaticProportionTotalVotingWeight(double totalVotingWeight, double proportion) {
+    public BBStaticProportionTVW(double totalVotingWeight, double proportion) {
         this.totalVotingWeight = totalVotingWeight;
         this.proportion = proportion;
     }
@@ -30,8 +30,8 @@ public class StaticProportionTotalVotingWeight extends BBSelectionStrategy {
             if (votingWeight > proportion*totalVotingWeight) {
                 selBBs.add(BBs.get(i));
                 selBBsVotingWeights.add(votingWeight);
-                System.out.println(BBs.get(i).makeCTree(false,true,
-                        true) +" - recieved: "+votingWeight+" voting weight.");
+//                System.out.println(BBs.get(i).makeCTree(false,true,
+//                        true) +" - recieved: "+votingWeight+" voting weight.");
             }
         }
     }
@@ -45,7 +45,7 @@ public class StaticProportionTotalVotingWeight extends BBSelectionStrategy {
             if (votingWeight > proportion*totalVotingWeight) {
                 selectedBBs[i] = 1;
                 if (verbose) {
-                    System.out.println(BBs.get(i) +" - recieved: "+votingWeight+" voting weight.");
+                    //System.out.println(BBs.get(i) +" - recieved: "+votingWeight+" voting weight.");
                 }
             }
         }

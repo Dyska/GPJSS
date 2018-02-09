@@ -1,10 +1,8 @@
 package yimei.jss;
 
 import ec.Evolve;
-import ec.Fitness;
 import ec.gp.GPIndividual;
 import ec.gp.GPNode;
-import ec.gp.GPNodeParent;
 import ec.gp.GPTree;
 import ec.util.ParameterDatabase;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
@@ -14,11 +12,8 @@ import yimei.jss.contributionselection.ContributionClusteringStrategy;
 import yimei.jss.contributionselection.ContributionSelectionStrategy;
 import yimei.jss.contributionselection.ContributionStaticThresholdStrategy;
 import yimei.jss.feature.FeatureUtil;
-import yimei.jss.gp.GPRuleEvolutionState;
 import yimei.jss.gp.terminal.AttributeGPNode;
-import yimei.jss.gp.terminal.ConstantTerminal;
 import yimei.jss.gp.terminal.JobShopAttribute;
-import yimei.jss.jobshop.Objective;
 import yimei.jss.niching.ClearingMultiObjectiveFitness;
 import yimei.jss.rule.RuleType;
 import yimei.jss.rule.operation.evolved.GPRule;
@@ -35,8 +30,6 @@ import java.util.List;
 
 import static ec.Evolve.loadParameterDatabase;
 import static yimei.jss.FJSSMain.getDirectoryNames;
-import static yimei.jss.FJSSMain.getFileNames;
-import static yimei.jss.feature.FeatureUtil.buildingBlocks;
 
 /**
  * Created by dyska on 14/12/17.
@@ -74,7 +67,8 @@ public class FCMain {
         //region <Read in params from file.>
         List<GPIndividual> selIndis = new ArrayList<>();
         List<GPNode> BBs = new ArrayList<>();
-        double[][] contributions = null;
+        //double[][] contributions = null;
+        List<DescriptiveStatistics> contributions = new ArrayList<>();
         DescriptiveStatistics votingWeightStat = new DescriptiveStatistics();
 
         BufferedReader br = null;
@@ -91,16 +85,19 @@ public class FCMain {
                 GPTree tree = GPRule.readFromLispExpression(ruleType,
                         line).getGPTree();
                 BBs.add(tree.child);
+                contributions.add(new DescriptiveStatistics());
             }
-            contributions = new double[selIndis.size()][BBs.size()];
             int rowNum = 0;
             while (!(line = br.readLine()).equals("VotingWeightStat")) {
+                DescriptiveStatistics d = contributions.get(rowNum);
                 double[] row = new double[BBs.size()];
                 String[] vals = line.split(",");
+
                 for (int i = 0; i < vals.length; ++i) {
                     row[i] = Double.parseDouble(vals[i]);
+                    d.addValue(row[i]);
                 }
-                contributions[rowNum] = row;
+                contributions.set(rowNum,d);
                 rowNum++;
             }
             while ((line = br.readLine()) != null) {
@@ -124,13 +121,13 @@ public class FCMain {
         }
         //endregion
 
-        //FCGPRuleEvolutionState state = initState(utilLevel, objective, seed);
+        FCGPRuleEvolutionState state = initState(utilLevel, objective, seed);
 
         //region <Define strategies>
         ContributionSelectionStrategy baselineContributionSelectionStrat =
                 new ContributionStaticThresholdStrategy(0.001);
         BBSelectionStrategy baselineBBSelectionStrat =
-                new StaticProportionTotalVotingWeight(0.5);
+                new BBStaticProportionTVW(0.5);
 
         List<ContributionSelectionStrategy> contributionStrategies = new ArrayList<>();
         contributionStrategies.add(new ContributionClusteringStrategy(2));
@@ -140,7 +137,7 @@ public class FCMain {
         bbStrategies.add(new TopKStrategy(1));
         bbStrategies.add(new BBClusteringStrategy(2));
         bbStrategies.add(new BBClusteringStrategy(3));
-        bbStrategies.add(new StaticProportionTotalVotingWeight(0.25));
+        bbStrategies.add(new BBStaticProportionTVW(0.25));
         //endregion
 
         List<DescriptiveStatistics> BBVotingWeightStats = new ArrayList<>();
@@ -148,7 +145,8 @@ public class FCMain {
             BBVotingWeightStats.add(new DescriptiveStatistics());
         }
 
-        List<GPNode> filteredBBs = FeatureUtil.prefilterBBs(BBs);
+
+        List<GPNode> filteredBBs = FeatureUtil.prefilterBBs(state,BBs);
 
         List<List<String>> outputMatrix = initMatrix(BBs,filteredBBs);
 
@@ -178,7 +176,7 @@ public class FCMain {
      * @param bbStrategy
      * @return selectedBuildingblocks.
      */
-    private static GPNode[] featureConstructionMock(double[][] contributions, List<GPIndividual> selIndis,
+    private static GPNode[] featureConstructionMock(List<DescriptiveStatistics> contributions, List<GPIndividual> selIndis,
                                                     List<GPNode> BBs, List<DescriptiveStatistics> BBVotingWeightStats,
                                                     DescriptiveStatistics votingWeightStat,
                                                     ContributionSelectionStrategy contributionStrategy,
@@ -194,8 +192,8 @@ public class FCMain {
         //ugly, sorry
         //total voting weight will not be known if we are running the whole process from scratch (ie generating
         //diverse set of individuals, not reading them in from a file)
-        if (bbStrategy instanceof StaticProportionTotalVotingWeight) {
-            ((StaticProportionTotalVotingWeight) bbStrategy).setTotalVotingWeight(votingWeightStat.getSum());
+        if (bbStrategy instanceof BBStaticProportionTVW) {
+            ((BBStaticProportionTVW) bbStrategy).setTotalVotingWeight(votingWeightStat.getSum());
         }
 
         //update these empty lists with results
@@ -371,9 +369,9 @@ public class FCMain {
         bbStrategies.add(new TopKStrategy(1));
         bbStrategies.add(new BBClusteringStrategy(2));
         bbStrategies.add(new BBClusteringStrategy(3));
-        bbStrategies.add( new StaticProportionTotalVotingWeight(0.25));
-        bbStrategies.add(new StaticProportionTotalVotingWeight(0.50));
-        bbStrategies.add(new StaticProportionTotalVotingWeight(0.75));
+        bbStrategies.add( new BBStaticProportionTVW(0.25));
+        bbStrategies.add(new BBStaticProportionTVW(0.50));
+        bbStrategies.add(new BBStaticProportionTVW(0.75));
         bbStrategies.add(new BBStaticThresholdStrategy(5.0));
         bbStrategies.add(new BBStaticThresholdStrategy(10.0));
         bbStrategies.add(new BBStaticThresholdStrategy(15.0));

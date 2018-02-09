@@ -36,9 +36,9 @@ public abstract class BBSelectionStrategy {
 
             try {
                 double totalVotingWeight = Double.parseDouble(name.substring(multIndex+1));
-                return new StaticProportionTotalVotingWeight(totalVotingWeight,proportion);
+                return new BBStaticProportionTVW(totalVotingWeight,proportion);
             } catch (NumberFormatException n) {
-                return new StaticProportionTotalVotingWeight(proportion);
+                return new BBStaticProportionTVW(proportion);
             }
         } else if (name.startsWith("top-")) {
             //"top-"+k;

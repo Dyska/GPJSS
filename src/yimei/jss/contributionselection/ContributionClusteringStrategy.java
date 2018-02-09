@@ -18,7 +18,7 @@ public class ContributionClusteringStrategy extends ContributionSelectionStrateg
         this.numClusters = k;
     }
 
-    public void selectContributions(double[][] contributions,
+    public void selectContributions(List<DescriptiveStatistics> contributions,
                                     List<GPIndividual> selIndis,
                                     List<GPNode> BBs,
                                     List<DescriptiveStatistics> BBVotingWeightStats,
@@ -98,16 +98,16 @@ public class ContributionClusteringStrategy extends ContributionSelectionStrateg
     //Not my code!
     //Taken from: https://www.programcreek.com/java-api-examples/index.php?source_dir=lichee-master/LICHeE/src/lineage/AAFClusterer.java
     //Then adapted to suit this context
-    public static Instances convertMatrixToWeka(double[][] data, int[][] instanceIDs) {
+    public static Instances convertMatrixToWeka(List<DescriptiveStatistics> data, int[][] instanceIDs) {
         //numFeatures should be one - Contribution
         int numFeatures = 1;
-        int numRows = data.length;
-        int numCols = data[0].length; //should be constant across all rows, so can arbitrarily pick first col
+        int numRows = data.size();
+        int numCols = (int) data.get(0).getN(); //should be constant across all rows, so can arbitrarily pick first col
 
         int numObs = 0;
         for (int i = 0; i < numRows; i++) {
             for (int j = 0; j < numCols; j++) {
-                double contribution = data[i][j];
+                double contribution = data.get(i).getElement(j);
                 if (contribution > 0.0) {
                     numObs++;
                 }
@@ -126,7 +126,7 @@ public class ContributionClusteringStrategy extends ContributionSelectionStrateg
         int count = 0;
         for (int i = 0; i < numRows; i++) {
             for (int j = 0; j < numCols; j++) {
-                double contribution = data[i][j];
+                double contribution = data.get(i).getElement(j);
                 if (contribution > 0.0) {
                     dataSet.instance(count).setValue(0,contribution);
                     count++;

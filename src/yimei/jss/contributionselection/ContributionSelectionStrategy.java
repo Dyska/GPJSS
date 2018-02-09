@@ -11,7 +11,7 @@ import java.util.List;
  */
 public abstract class ContributionSelectionStrategy {
 
-    public abstract void selectContributions(double[][] contributions,
+    public abstract void selectContributions(List<DescriptiveStatistics> featureContributionStats,
                         List<GPIndividual> selIndis,
                         List<GPNode> BBs,
                         List<DescriptiveStatistics> BBVotingWeightStats,

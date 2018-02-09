@@ -37,8 +37,6 @@ public abstract class PhenoCharacterisation {
         calcReferenceIndexes();
     }
 
-
-
     public abstract int[] characterise(AbstractRule rule);
 
     public static double distance(int[] charList1, int[] charList2) {
@@ -122,6 +120,9 @@ class SequencingPhenoCharacterisation extends PhenoCharacterisation {
     }
 
     public static PhenoCharacterisation defaultPhenoCharacterisation(String filePath) {
+        if (filePath == null) {
+            return  defaultPhenoCharacterisation();
+        }
         AbstractRule defaultSequencingRule = new WSPT(RuleType.SEQUENCING);
         AbstractRule defaultRoutingRule = new WIQ(RuleType.ROUTING);
         FlexibleStaticInstance flexibleStaticInstance = FlexibleStaticInstance.readFromAbsPath(filePath);
@@ -230,6 +231,9 @@ class RoutingPhenoCharacterisation extends PhenoCharacterisation {
     }
 
     public static PhenoCharacterisation defaultPhenoCharacterisation(String filePath) {
+        if (filePath == null) {
+            return defaultPhenoCharacterisation();
+        }
         AbstractRule defaultSequencingRule = new WSPT(RuleType.SEQUENCING);
         AbstractRule defaultRoutingRule = new WIQ(RuleType.ROUTING);
         FlexibleStaticInstance flexibleStaticInstance = FlexibleStaticInstance.readFromAbsPath(filePath);

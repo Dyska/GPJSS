@@ -55,6 +55,10 @@ public class GPRuleEvolutionState extends SimpleEvolutionState {
 	}
 
     public void setTerminals(GPNode[] terminals, int subPopNum) {
+		if (this.terminals[subPopNum].length != terminals.length) {
+			output.message("Terminal set size changed from "
+					+this.terminals[subPopNum].length+" features to "+terminals.length+".\n");
+		}
         this.terminals[subPopNum] = terminals;
     }
 

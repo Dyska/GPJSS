@@ -8,16 +8,10 @@ import ec.gp.GPNode;
 import ec.gp.GPTree;
 import ec.multiobjective.MultiObjectiveFitness;
 import ec.util.Parameter;
-import net.sf.javaml.clustering.KMeans;
-import net.sf.javaml.core.Dataset;
-import net.sf.javaml.core.DefaultDataset;
-import net.sf.javaml.core.DenseInstance;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import yimei.jss.algorithm.featureconstruction.FCGPRuleEvolutionState;
 import yimei.jss.bbselection.BBSelectionStrategy;
-import yimei.jss.bbselection.BBStaticThresholdStrategy;
-import yimei.jss.bbselection.StaticProportionTotalVotingWeight;
-import yimei.jss.contributionselection.ContributionClusteringStrategy;
+import yimei.jss.bbselection.BBStaticProportionTVW;
 import yimei.jss.contributionselection.ContributionSelectionStrategy;
 import yimei.jss.contributionselection.ContributionStaticThresholdStrategy;
 import yimei.jss.feature.ignore.Ignorer;
@@ -34,11 +28,10 @@ import yimei.jss.rule.operation.evolved.GPRule;
 import yimei.jss.ruleevaluation.SimpleEvaluationModel;
 import yimei.jss.ruleoptimisation.RuleOptimizationProblem;
 import yimei.jss.simulation.DynamicSimulation;
+import yimei.jss.terminalselection.TerminalSelectionStrategy;
+import yimei.jss.terminalselection.TerminalStaticProportionTVW;
 
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 
 /**
@@ -61,16 +54,17 @@ public class FeatureUtil {
         Arrays.sort(archive);
         PhenoCharacterisation pc = null;
         double radius = 0;
-        if (state.evaluator instanceof ClearingEvaluator) {
-            ClearingEvaluator clearingEvaluator = (ClearingEvaluator) state.evaluator;
-            pc = clearingEvaluator.getPhenoCharacterisation()[subPopNum];
-            radius = clearingEvaluator.getRadius();
-        } else if (state.evaluator instanceof MultiPopCoevolutionaryClearingEvaluator) {
-            MultiPopCoevolutionaryClearingEvaluator clearingEvaluator =
-                    (MultiPopCoevolutionaryClearingEvaluator) state.evaluator;
-            pc = clearingEvaluator.getPhenoCharacterisation()[subPopNum];
-            radius = clearingEvaluator.getRadius();
+        if (!(state.evaluator instanceof ClearableEvaluator)) {
+            try {
+                throw new Exception("Clearing evaluator expected!");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+
+        ClearableEvaluator clearingEvaluator = (ClearableEvaluator) state.evaluator;
+        pc = clearingEvaluator.getPhenoCharacterisation(subPopNum);
+        radius = clearingEvaluator.getRadius();
 
         RuleType ruleType = ruleTypes[subPopNum];
         pc.setReferenceRule(new GPRule(ruleType,((GPIndividual)archive[0]).trees[0]));
@@ -280,37 +274,40 @@ public class FeatureUtil {
      * @return the set of selected features.
      */
     public static GPNode[] featureSelection(EvolutionState state,
-                                                List<GPIndividual> selIndis,
-                                                RuleType ruleType,
-                                                double fitUB, double fitLB) {
-        DescriptiveStatistics votingWeightStat = new DescriptiveStatistics();
+                                            List<GPIndividual> selIndis,
+                                            RuleType ruleType,
+                                            double fitUB, double fitLB) {
+        ContributionSelectionStrategy c = new ContributionStaticThresholdStrategy(0.001);
+        TerminalStaticProportionTVW t = new TerminalStaticProportionTVW(0.5);
+        return featureSelection(state,selIndis,ruleType,fitUB,fitLB,c,t);
+    }
 
-        for (GPIndividual selIndi : selIndis) {
-            double normFit = (1/(1+selIndi.fitness.fitness()) - fitLB) / (fitUB - fitLB);
+    /**
+     * Feature selection by majority voting based on feature contributions.
+     * @param state the current evolution state (training set).
+     * @param selIndis the selected diverse set of individuals.
+     * @param fitUB the upper bound of individual fitness.
+     * @param fitLB the lower bound of individual fitness.
+     * @return the set of selected features.
+     */
+    public static GPNode[] featureSelection(EvolutionState state,
+                                            List<GPIndividual> selIndis,
+                                            RuleType ruleType,
+                                            double fitUB, double fitLB,
+                                            ContributionSelectionStrategy contributionSelectionStrategy,
+                                            TerminalSelectionStrategy terminalSelectionStrategy) {
 
-            if (normFit < 0) {
-                normFit = 0;
-            }
-            double votingWeight = normFit;
-            System.out.println(votingWeight);
-            votingWeightStat.addValue(votingWeight);
-        }
+        DescriptiveStatistics votingWeightStat = initVotingWeightStat(selIndis, fitUB, fitLB);
 
-        double totalVotingWeight = votingWeightStat.getSum();
+        List<DescriptiveStatistics> terminalContributionStats = new ArrayList<>();
+        List<DescriptiveStatistics> terminalVotingWeightStats = new ArrayList<>();
 
-        List<DescriptiveStatistics> featureContributionStats = new ArrayList<>();
-        List<DescriptiveStatistics> featureVotingWeightStats = new ArrayList<>();
-
-        int subPopNum = 0;
-        if (ruleType == RuleType.ROUTING) {
-            subPopNum = 1;
-        }
-
+        int subPopNum = ruleType == RuleType.SEQUENCING ? 0 : 1;
         GPNode[] terminals = ((TerminalsChangable)state).getTerminals(subPopNum);
 
         for (int i = 0; i < terminals.length; i++) {
-            featureContributionStats.add(new DescriptiveStatistics());
-            featureVotingWeightStats.add(new DescriptiveStatistics());
+            terminalContributionStats.add(new DescriptiveStatistics());
+            terminalVotingWeightStats.add(new DescriptiveStatistics());
         }
 
         for (int s = 0; s < selIndis.size(); s++) {
@@ -318,71 +315,40 @@ public class FeatureUtil {
 
             for (int i = 0; i < terminals.length; i++) {
                 double c = contribution(state, selIndi, terminals[i], ruleType);
-                featureContributionStats.get(i).addValue(c);
-
-                if (c > 0.001) {
-                    featureVotingWeightStats.get(i).addValue(votingWeightStat.getElement(s));
-                }
-                else {
-                    featureVotingWeightStats.get(i).addValue(0);
-                }
+                terminalContributionStats.get(i).addValue(c);
             }
         }
 
+        contributionSelectionStrategy.selectContributions(terminalContributionStats,selIndis,
+                Arrays.asList(terminals),terminalVotingWeightStats,votingWeightStat);
+
         long jobSeed = ((GPRuleEvolutionState)state).getJobSeed();
-        String outputPath = initPath(state,false);
-        File featureInfoFile = new File(outputPath + "job." + jobSeed +
+        //String outputPath = initPath(state,false);
+        String outputPath = "";
+        File terminalInfoFile = new File(outputPath + "job." + jobSeed +
                 " - "+ ruleType.name() + ".fsinfo.csv");
 
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(featureInfoFile));
-            writer.write("Feature,Fitness,Contribution,VotingWeights,NormFit,Size");
-            writer.newLine();
+        writeTerminalContributions(terminalInfoFile,terminals,selIndis,terminalContributionStats,
+                terminalVotingWeightStats,votingWeightStat);
 
-            for (int i = 0; i < terminals.length; i++) {
-                for (int j = 0; j < selIndis.size(); j++) {
-                    writer.write(terminals[i].toString() + "," +
-                            selIndis.get(j).fitness.fitness() + "," +
-                            featureContributionStats.get(i).getElement(j) + "," +
-                            featureVotingWeightStats.get(i).getElement(j) + "," +
-                            votingWeightStat.getElement(j) + "," +
-                            selIndis.get(j).size());
-                    writer.newLine();
-                }
-            }
-
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+        //ugly, sorry
+        //total voting weight will not be known if we are running the whole process from scratch (ie generating
+        //diverse set of individuals, not reading them in from a file)
+        if (terminalSelectionStrategy instanceof TerminalStaticProportionTVW) {
+            ((TerminalStaticProportionTVW) terminalSelectionStrategy).setTotalVotingWeight(
+                    votingWeightStat.getSum());
         }
 
         List<GPNode> selFeatures = new LinkedList<>();
-
-        for (int i = 0; i < terminals.length; i++) {
-            double votingWeight = featureVotingWeightStats.get(i).getSum();
-
-            // majority voting
-            if (votingWeight > 0.5 * totalVotingWeight) {
-                selFeatures.add(terminals[i]);
-            }
-        }
+        terminalSelectionStrategy.selectTerminals(Arrays.asList(terminals),
+                selFeatures,terminalVotingWeightStats);
 
         File fsFile = new File(outputPath + "job." + jobSeed + " - "
                 + ruleType.name() + ".terminals.csv");
 
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter(fsFile));
+        writeSelFeatures(fsFile,selFeatures);
 
-            for (GPNode terminal : selFeatures) {
-                writer.write(terminal.toString());
-                writer.newLine();
-            }
-
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+        state.output.message("Selected "+selFeatures.size()+" features out of "+terminals.length);
         return selFeatures.toArray(new GPNode[0]);
     }
 
@@ -425,7 +391,7 @@ public class FeatureUtil {
                                                    boolean preFiltering) {
         ContributionSelectionStrategy contributionStrategy =
                 new ContributionStaticThresholdStrategy(0.001);
-        BBSelectionStrategy bbStrategy = new BBStaticThresholdStrategy(0.0);
+        BBSelectionStrategy bbStrategy = new BBStaticProportionTVW(0.5);
         return featureConstruction(state, selIndis, ruleType, fitUB, fitLB,
                 preFiltering, contributionStrategy, bbStrategy);
     }
@@ -483,10 +449,10 @@ public class FeatureUtil {
                                                    BBSelectionStrategy bbStrategy) {
         DescriptiveStatistics votingWeightStat = initVotingWeightStat(selIndis, fitUB, fitLB);
 
-        List<GPNode> BBs = buildingBlocks(selIndis, 2);
+        List<GPNode> BBs = buildingBlocks(state,selIndis, 2);
 
         if (preFiltering) {
-            BBs = prefilterBBs(BBs);
+            BBs = prefilterBBs(state,BBs);
         }
 
         if (BBs.isEmpty()) {
@@ -502,33 +468,26 @@ public class FeatureUtil {
             BBVotingWeightStats.add(new DescriptiveStatistics());
         }
 
-        double[][] contributions = new double[selIndis.size()][BBs.size()];
-
         for (int s = 0; s < selIndis.size(); s++) {
-            //System.out.println("Finding contributions for rule "+s);
             GPIndividual selIndi = selIndis.get(s);
 
             for (int i = 0; i < BBs.size(); i++) {
                 double c = contribution(state, selIndi, BBs.get(i), ruleType);
-                contributions[s][i] = c;
                 BBContributionStats.get(i).addValue(c);
             }
         }
-//        if (!preFiltering) {
-//            //for testing purposes - will remove this
-//            outputState(state,selIndis,BBs,contributions,votingWeightStat,ruleType);
-//            return new GPNode[0];
-//        }
 
         //select which contributions to count
-        contributionStrategy.selectContributions(contributions,selIndis,BBs,BBVotingWeightStats,votingWeightStat);
+        contributionStrategy.selectContributions(BBContributionStats,selIndis,BBs,
+                BBVotingWeightStats,votingWeightStat);
 
         long jobSeed = ((GPRuleEvolutionState)state).getJobSeed();
         //String outputPath = initPath(state, preFiltering);
         File BBInfoFile = new File("job." + jobSeed +
                 " - "+ ruleType.name() + ".fcinfo.csv");
 
-        writeContributions(BBInfoFile,BBs,selIndis,BBContributionStats,BBVotingWeightStats,votingWeightStat);
+        writeBBContributions(BBInfoFile,BBs,selIndis,BBContributionStats,
+                BBVotingWeightStats,votingWeightStat);
 
         //Now select which building blocks to record!
 
@@ -538,8 +497,8 @@ public class FeatureUtil {
         //ugly, sorry
         //total voting weight will not be known if we are running the whole process from scratch (ie generating
         //diverse set of individuals, not reading them in from a file)
-        if (bbStrategy instanceof StaticProportionTotalVotingWeight) {
-            ((StaticProportionTotalVotingWeight) bbStrategy).setTotalVotingWeight(votingWeightStat.getSum());
+        if (bbStrategy instanceof BBStaticProportionTVW) {
+            ((BBStaticProportionTVW) bbStrategy).setTotalVotingWeight(votingWeightStat.getSum());
         }
 
         //update these empty lists with results
@@ -548,7 +507,7 @@ public class FeatureUtil {
         //write to file
         File fcFile = new File("job." + jobSeed + " - "+ ruleType.name() + ".bbs.csv");
         writeBBs(fcFile, selBBs, selBBsVotingWeights);
-
+        state.output.message("Added "+selBBs.size()+" constructed features.");
         return selBBs.toArray(new GPNode[0]);
     }
 
@@ -569,7 +528,22 @@ public class FeatureUtil {
         }
     }
 
-    public static void writeContributions(File BBInfoFile,
+    public static void writeSelFeatures(File fsFile, List<GPNode> selFeatures) {
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fsFile));
+
+            for (GPNode terminal : selFeatures) {
+                writer.write(terminal.toString());
+                writer.newLine();
+            }
+
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void writeBBContributions(File BBInfoFile,
                                           List<GPNode> BBs,
                                           List<GPIndividual> selIndis,
                                           List<DescriptiveStatistics> BBContributionStats,
@@ -593,6 +567,36 @@ public class FeatureUtil {
                     writer.newLine();
                 }
             }
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void writeTerminalContributions(File featureInfoFile,
+                                          GPNode[] terminals,
+                                          List<GPIndividual> selIndis,
+                                          List<DescriptiveStatistics> featureContributionStats,
+                                          List<DescriptiveStatistics> featureVotingWeightStats,
+                                          DescriptiveStatistics votingWeightStat) {
+
+        try {
+            BufferedWriter writer = new BufferedWriter(new FileWriter(featureInfoFile));
+            writer.write("Terminal,Fitness,Contribution,VotingWeights,NormFit,Size");
+            writer.newLine();
+
+            for (int i = 0; i < terminals.length; i++) {
+                for (int j = 0; j < selIndis.size(); j++) {
+                    writer.write(terminals[i].toString() + "," +
+                            selIndis.get(j).fitness.fitness() + "," +
+                            featureContributionStats.get(i).getElement(j) + "," +
+                            featureVotingWeightStats.get(i).getElement(j) + "," +
+                            votingWeightStat.getElement(j) + "," +
+                            selIndis.get(j).size());
+                    writer.newLine();
+                }
+            }
+
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -779,14 +783,14 @@ public class FeatureUtil {
     //have two of the same terminals eg PT max PT - meaningless
     //The second component should remove all BBs which compare
     //two terminals of separate dimensions.
-    public static List<GPNode> prefilterBBs(List<GPNode> BBs) {
-        List<GPNode> dupTerminalsRemovedBBs = filterDuplicateTerminalBBs(BBs);
-        List<GPNode> conflictingDimensionsRemovedBBs = filterConflictingDimensionBBs(dupTerminalsRemovedBBs);
+    public static List<GPNode> prefilterBBs(EvolutionState state, List<GPNode> BBs) {
+        List<GPNode> dupTerminalsRemovedBBs = filterDuplicateTerminalBBs(state,BBs);
+        List<GPNode> conflictingDimensionsRemovedBBs = filterConflictingDimensionBBs(state,dupTerminalsRemovedBBs);
         return conflictingDimensionsRemovedBBs;
     }
 
     //Should remove all subtrees with duplicate terminals being used.
-    private static List<GPNode> filterDuplicateTerminalBBs(List<GPNode> BBs) {
+    private static List<GPNode> filterDuplicateTerminalBBs(EvolutionState state,List<GPNode> BBs) {
         List<GPNode> filteredBBs = new ArrayList<>();
         for (GPNode node: BBs) {
             //expecting trees of depth 2, so will just have two children which are terminals
@@ -804,13 +808,13 @@ public class FeatureUtil {
                 //System.out.println("Removing subtree "+node.makeCTree(false,true,true));
             }
         }
-        System.out.println("Removed "+(BBs.size()-filteredBBs.size())+" subtrees with duplicate terminals.");
+        state.output.message("Removed "+(BBs.size()-filteredBBs.size())+" subtrees with duplicate terminals.");
         return filteredBBs;
     }
 
     //Should remove all subtrees which +, -, max & min two terminals which
     //are from different dimensions. These dimensions are based on
-    private static List<GPNode> filterConflictingDimensionBBs(List<GPNode> BBs) {
+    private static List<GPNode> filterConflictingDimensionBBs(EvolutionState state,List<GPNode> BBs) {
         List<GPNode> filteredBBs = new ArrayList<>();
         for (GPNode node: BBs) {
             if (!(node instanceof Mul || node instanceof Div)) {
@@ -821,7 +825,8 @@ public class FeatureUtil {
                 JobShopAttribute js2;
 
                 if (node.children[0] instanceof TerminalERCUniform) {
-                    js1 = ((AttributeGPNode) ((TerminalERCUniform) node.children[0]).getTerminal()).getJobShopAttribute();
+                    js1 =
+                            ((AttributeGPNode) ((TerminalERCUniform) node.children[0]).getTerminal()).getJobShopAttribute();
                 } else {
                     js1 = ((AttributeGPNode) node.children[0]).getJobShopAttribute();
                 }
@@ -841,7 +846,7 @@ public class FeatureUtil {
                 filteredBBs.add(node);
             }
         }
-        System.out.println("Removed "+(BBs.size()-filteredBBs.size())+" subtrees with conflicting dimensions.");
+        state.output.message("Removed "+(BBs.size()-filteredBBs.size())+" subtrees with conflicting dimensions.");
         return filteredBBs;
     }
 
@@ -851,7 +856,7 @@ public class FeatureUtil {
      * @param depth the depth of the sub-trees/building blocks.
      * @return the building blocks.
      */
-    public static List<GPNode> buildingBlocks(List<GPIndividual> indis, int depth) {
+    public static List<GPNode> buildingBlocks(EvolutionState state, List<GPIndividual> indis, int depth) {
         List<GPNode> bbs = new ArrayList<>();
         HashMap<String, Integer> bbCounts = new HashMap();
 
@@ -863,7 +868,7 @@ public class FeatureUtil {
 //            System.out.println("Subtree "+subtree+
 //                    " appeared "+bbCounts.get(subtree)+" times.");
 //        }
-        System.out.println(bbs.size()+" subtrees found.");
+        state.output.message(bbs.size()+" subtrees found.");
         return bbs;
     }
 

@@ -16,24 +16,25 @@ public class GPMain {
         boolean isTest = true;
         int maxTests = 1;
         boolean isDynamic = true;
+        int batchSize = 5;
+        int preAdaptiveGenerations = 10;
 
         String workingDirectory = (new File("")).getAbsolutePath();
 
-        double[] utilLevels = new double[] {0.95};
-        String[] objectives = new String[] {"max-flowtime"};
+        double[] utilLevels = new double[] {0.85};
+        String[] objectives = new String[] {"mean-flowtime"};
         for (double utilLevel: utilLevels) {
             for (String objective: objectives) {
                 List<String> gpRunArgs = new ArrayList<>();
                 //include path to params file
                 gpRunArgs.add("-file");
                 if (isDynamic) {
-                    String contributionSelectionStrategy = "3-Clustering";
-                    String bbSelectionStrategy = "top-1";
 
                     //Calling -jar GPJSS-FC.jar -file params/fcgp-simplegp-dynamic.params -p eval.problem.eval-model.sim-models.0.util-level=0.95 -p eval.problem.eval-model.objectives.0=max-flowtime -p contributionSelectionStrategy=2-Clustering -p bbSelectionStrategy=2-Clustering -p seed.0=13 -p stat.file=job.13.out.stat
 
+                    gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/adaptivesearch/as-simplegp-dynamic.params");
                     //gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/featureconstruction/fcgp-simplegp-dynamic.params");
-                    gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/featureconstruction/fcgp-coevolutiongp-dynamic.params");
+                    //gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/featureconstruction/fcgp-coevolutiongp-dynamic.params");
                     //gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/coevolutiongp/coevolutiongp-dynamic.params");
                     //gpRunArgs.add(workingDirectory+"/src/yimei/jss/algorithm/simplegp/simplegp-dynamic.params");
                     gpRunArgs.add("-p");
@@ -41,9 +42,9 @@ public class GPMain {
                     gpRunArgs.add("-p");
                     gpRunArgs.add("eval.problem.eval-model.objectives.0="+objective);
                     gpRunArgs.add("-p");
-                    gpRunArgs.add("bbSelectionStrategy="+bbSelectionStrategy);
+                    gpRunArgs.add("adaptive-selection-batch-size="+batchSize);
                     gpRunArgs.add("-p");
-                    gpRunArgs.add("contributionSelectionStrategy="+contributionSelectionStrategy);
+                    gpRunArgs.add("adaptive-selection-pre-adapative-generations="+preAdaptiveGenerations);
                     gpRunArgs.add("-p");
                     for (int i = 0; i < 1 && i <= maxTests; ++i) {
                         gpRunArgs.add("seed.0="+String.valueOf(i));

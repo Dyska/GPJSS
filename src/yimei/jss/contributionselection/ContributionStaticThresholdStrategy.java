@@ -17,19 +17,19 @@ public class ContributionStaticThresholdStrategy extends ContributionSelectionSt
     }
 
     @Override
-    public void selectContributions(double[][] contributions,
+    public void selectContributions(List<DescriptiveStatistics> contributions,
                                     List<GPIndividual> selIndis,
                                     List<GPNode> BBs,
                                     List<DescriptiveStatistics> BBVotingWeightStats,
                                     DescriptiveStatistics votingWeightStat) {
         for (int s = 0; s < selIndis.size(); s++) {
             for (int i = 0; i < BBs.size(); i++) {
-                double c = contributions[s][i];
+                double c = contributions.get(i).getElement(s);
 
                 if (c > threshold) {
                     BBVotingWeightStats.get(i).addValue(votingWeightStat.getElement(s));
-                    System.out.println("Rule "+s+" voted for building block "+i+
-                            " with weight "+votingWeightStat.getElement(s)+" - c: "+c+".");
+//                    System.out.println("Rule "+s+" voted for building block "+i+
+//                            " with weight "+votingWeightStat.getElement(s)+" - c: "+c+".");
                 }
                 else {
                     BBVotingWeightStats.get(i).addValue(0);
