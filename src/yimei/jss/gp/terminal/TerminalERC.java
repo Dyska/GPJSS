@@ -18,6 +18,7 @@ public abstract class TerminalERC extends ERC {
     protected GPNode terminal;
 
     public void setTerminal(GPNode terminal) {
+        this.children = terminal.children;
         this.terminal = terminal;
     }
 
@@ -29,7 +30,8 @@ public abstract class TerminalERC extends ERC {
     public String toString() {
         if (!(terminal instanceof AttributeGPNode)) {
             //eg. (* NPT W)
-            return "("+terminal.toString()+" "+terminal.children[0].toString()+" "+terminal.children[1].toString()+")";
+            return "("+terminal.toString()+" "+terminal.children[0].toString()+
+                    " "+terminal.children[1].toString()+")";
         }
 
         return terminal.toString();

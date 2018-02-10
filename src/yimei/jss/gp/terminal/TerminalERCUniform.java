@@ -25,6 +25,7 @@ public class TerminalERCUniform extends TerminalERC {
         }
 
         terminal = ((GPRuleEvolutionState)state).pickTerminalRandom(subPopNum);
+        children = terminal.children;
     }
 
     @Override
@@ -32,6 +33,7 @@ public class TerminalERCUniform extends TerminalERC {
         //Assume here we are dealing with simple gp
         int subPopNum = 0;
         terminal = ((GPRuleEvolutionState)state).pickTerminalRandom(subPopNum);
+        children = terminal.children;
 
         if (terminal instanceof ERC) {
             ERC ercTerminal = new DoubleERC();
@@ -48,6 +50,7 @@ public class TerminalERCUniform extends TerminalERC {
             subPopNum = 1;
         }
         terminal = ((GPRuleEvolutionState)state).pickTerminalRandom(subPopNum);
+        children = terminal.children;
 
         if (terminal instanceof ERC) {
             ERC ercTerminal = new DoubleERC();
