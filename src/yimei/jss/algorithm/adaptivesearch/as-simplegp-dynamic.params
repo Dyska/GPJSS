@@ -225,8 +225,7 @@ eval.problem.eval-model.rotate-sim-seed = true
 eval.problem.eval-model.sim-models.0.num-jobs = 5000
 eval.problem.eval-model.sim-models.0.warmup-jobs = 1000
 
-adaptive-selection-pre-adapative-generations = 10
 ignorer = yimei.jss.feature.ignore.SimpleIgnorer
 adaptive-selection-adapt-population = true
-adaptive-selection-pre-adapative-generations = 10
-adaptive-selection-batch-size = 5
+terminals-from =                        relative
+

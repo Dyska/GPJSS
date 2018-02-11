@@ -22,15 +22,32 @@ public class TerminalStaticProportionTVW extends TerminalSelectionStrategy {
     }
 
     @Override
-    public void selectTerminals(List<GPNode> BBs, List<GPNode> selBBs,
-                                List<DescriptiveStatistics> BBVotingWeightStats) {
-        for (int i = 0; i < BBs.size(); i++) {
-            double votingWeight = BBVotingWeightStats.get(i).getSum();
+    public void selectTerminals(List<GPNode> terminals, List<GPNode> selTerminals,
+                                List<DescriptiveStatistics> terminalVotingWeightStats) {
+        for (int i = 0; i < terminals.size(); i++) {
+            double votingWeight = terminalVotingWeightStats.get(i).getSum();
             if (votingWeight > proportion*totalVotingWeight) {
-                selBBs.add(BBs.get(i));
+                selTerminals.add(terminals.get(i));
 //                System.out.println(BBs.get(i).makeCTree(false,true,
 //                        true) +" - recieved: "+votingWeight+" voting weight.");
             }
+        }
+
+        if (selTerminals.isEmpty()) {
+            //this is not an option, will break things down the line as terminal set will be empty
+            //should just pick highest voting weight out of all terminals
+            double highestVotingWeight = terminalVotingWeightStats.get(0).getSum();
+            GPNode bestTerminal = terminals.get(0);
+            for (int i = 1; i < terminals.size(); i++) {
+                double votingWeight = terminalVotingWeightStats.get(i).getSum();
+                if (votingWeight > highestVotingWeight) {
+                    highestVotingWeight = votingWeight;
+                    bestTerminal = terminals.get(i);
+                }
+            }
+            //as no terminals surpassed requirements of total voting weight proportion, only
+            //1 will be added
+            selTerminals.add(bestTerminal);
         }
     }
 

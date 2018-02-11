@@ -25,10 +25,16 @@ public class ASGPRuleEvolutionState extends FCGPRuleEvolutionState implements Te
     public static final String P_IGNORER = "ignorer";
     public static final String P_BATCH_SIZE = "adaptive-selection-batch-size";
     public static final String P_PRE_ADAPTIVE_GENS = "adaptive-selection-pre-adapative-generations";
+    public static final String P_BB_SELECTION = "bbSelectionStrategy";
+    public static final String P_TERMINAL_SELECTION = "terminalSelectionStrategy";
+    public static final String P_CONTRIBUTION_SELECTION = "contributionSelectionStrategy";
 
     private Ignorer ignorer;
     private int batchSize;
     private int preAdapativeGenerations;
+    private String bbSelectionStrategy;
+    private String contributionSelectionStrategy;
+    private String terminalSelectionStrategy;
 
     @Override
     public Ignorer getIgnorer() {
@@ -46,20 +52,28 @@ public class ASGPRuleEvolutionState extends FCGPRuleEvolutionState implements Te
 
         ignorer = (Ignorer)(state.parameters.getInstanceForParameter(
                 new Parameter(P_IGNORER), null, Ignorer.class));
+        batchSize = parameters.getInt(new Parameter(P_BATCH_SIZE),null,1);
+        preAdapativeGenerations = parameters.getInt(new Parameter(P_PRE_ADAPTIVE_GENS),
+                null,1);
+        bbSelectionStrategy = parameters.getString(new Parameter(P_BB_SELECTION),null);
+        contributionSelectionStrategy = parameters.getString(new Parameter(P_CONTRIBUTION_SELECTION),null);
+        terminalSelectionStrategy = parameters.getString(new Parameter(P_TERMINAL_SELECTION),null);
     }
 
     @Override
     public int evolve() {
-        if (batchSize == 0) {
-            //won't have been initisalised yet, should read this in now
-            batchSize = parameters.getInt(new Parameter(P_BATCH_SIZE),null,1);
-            preAdapativeGenerations = parameters.getInt(new Parameter(P_PRE_ADAPTIVE_GENS),
-                    null,0);
+        if (generation > 0) {
+            output.message("Generation " + generation);
         }
+
+        // EVALUATION
+        statistics.preEvaluationStatistics(this);
 
         if (generation%batchSize == 0 && generation >= preAdapativeGenerations) {
             if (evaluator instanceof ClearableEvaluator) { ((ClearableEvaluator)evaluator).setClear(true); }
             evaluator.evaluatePopulation(this);
+            //want to run post evaluation stats here, so bestFitnesses is set
+            statistics.postEvaluationStatistics(this);
 
             for (int i = 0; i < population.subpops.length; ++i) {
                 Individual[] individuals = population.subpops[i].individuals;
@@ -74,31 +88,25 @@ public class ASGPRuleEvolutionState extends FCGPRuleEvolutionState implements Te
                 fitUB = 1/(1+bestFitnesses[i]);
                 fitLB = 1/(1+worstFitnesses[i]);
 
-                output.message("");
-                output.message("Adaptive search - "+FeatureUtil.ruleTypes[i]+
+                output.message("\nAdaptive search - "+FeatureUtil.ruleTypes[i]+
                         " population, generation "+generation+".");
 
                 boolean doFiltering = true;
                 GPNode[] constructedFeatures = FeatureUtil.featureConstruction(this, selIndis,
-                        FeatureUtil.ruleTypes[i], fitUB, fitLB, doFiltering);
+                        FeatureUtil.ruleTypes[i], fitUB, fitLB, doFiltering,contributionSelectionStrategy,bbSelectionStrategy);
                 GPNode[] selFeatures = FeatureUtil.featureSelection(this, selIndis,
-                        FeatureUtil.ruleTypes[i], fitUB, fitLB);
+                        FeatureUtil.ruleTypes[i], fitUB, fitLB,contributionSelectionStrategy,terminalSelectionStrategy);
 
                 GPNode[] updatedTerminalSet = ArrayUtils.addAll(constructedFeatures,selFeatures);
                 setTerminals(updatedTerminalSet,i);
             }
             //stop clearing individuals again
             if (evaluator instanceof ClearableEvaluator) { ((ClearableEvaluator)evaluator).setClear(false); }
+        } else {
+            //evaluate normally
+            evaluator.evaluatePopulation(this);
+            statistics.postEvaluationStatistics(this);
         }
-
-        if (generation > 0) {
-            output.message("Generation " + generation);
-        }
-
-        // EVALUATION
-        statistics.preEvaluationStatistics(this);
-        evaluator.evaluatePopulation(this);
-        statistics.postEvaluationStatistics(this);
 
         // SHOULD WE QUIT?
         if (evaluator.runComplete(this) && quitOnRunComplete)

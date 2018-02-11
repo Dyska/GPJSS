@@ -278,7 +278,27 @@ public class FeatureUtil {
                                             RuleType ruleType,
                                             double fitUB, double fitLB) {
         ContributionSelectionStrategy c = new ContributionStaticThresholdStrategy(0.001);
-        TerminalStaticProportionTVW t = new TerminalStaticProportionTVW(0.5);
+        TerminalStaticProportionTVW t = new TerminalStaticProportionTVW(0.1);
+        return featureSelection(state,selIndis,ruleType,fitUB,fitLB,c,t);
+    }
+
+    /**
+     * Feature selection by majority voting based on feature contributions.
+     * @param state the current evolution state (training set).
+     * @param selIndis the selected diverse set of individuals.
+     * @param fitUB the upper bound of individual fitness.
+     * @param fitLB the lower bound of individual fitness.
+     * @return the set of selected features.
+     */
+    public static GPNode[] featureSelection(EvolutionState state,
+                                            List<GPIndividual> selIndis,
+                                            RuleType ruleType,
+                                            double fitUB, double fitLB,
+                                            String contributionSelectionStrategy,
+                                            String terminalSelectionStrategy) {
+        ContributionSelectionStrategy c =
+                ContributionSelectionStrategy.selectStrategy(contributionSelectionStrategy);
+        TerminalSelectionStrategy t = TerminalSelectionStrategy.selectStrategy(terminalSelectionStrategy);
         return featureSelection(state,selIndis,ruleType,fitUB,fitLB,c,t);
     }
 
@@ -296,7 +316,6 @@ public class FeatureUtil {
                                             double fitUB, double fitLB,
                                             ContributionSelectionStrategy contributionSelectionStrategy,
                                             TerminalSelectionStrategy terminalSelectionStrategy) {
-
         DescriptiveStatistics votingWeightStat = initVotingWeightStat(selIndis, fitUB, fitLB);
 
         List<DescriptiveStatistics> terminalContributionStats = new ArrayList<>();
@@ -326,7 +345,7 @@ public class FeatureUtil {
         //String outputPath = initPath(state,false);
         String outputPath = "";
         File terminalInfoFile = new File(outputPath + "job." + jobSeed +
-                " - "+ ruleType.name() + ".fsinfo.csv");
+                " - " + state.generation+" - "+ ruleType.name() + ".fsinfo.csv");
 
         writeTerminalContributions(terminalInfoFile,terminals,selIndis,terminalContributionStats,
                 terminalVotingWeightStats,votingWeightStat);
@@ -343,7 +362,7 @@ public class FeatureUtil {
         terminalSelectionStrategy.selectTerminals(Arrays.asList(terminals),
                 selFeatures,terminalVotingWeightStats);
 
-        File fsFile = new File(outputPath + "job." + jobSeed + " - "
+        File fsFile = new File(outputPath + "job." + jobSeed + " - " + state.generation + " - "
                 + ruleType.name() + ".terminals.csv");
 
         writeSelFeatures(fsFile,selFeatures);
@@ -369,7 +388,6 @@ public class FeatureUtil {
         return votingWeightStat;
     }
 
-
     /**
      * Feature construction by majority voting based on contribution.
      * A constructed feature/building block is a depth-2 sub-tree.
@@ -391,7 +409,7 @@ public class FeatureUtil {
                                                    boolean preFiltering) {
         ContributionSelectionStrategy contributionStrategy =
                 new ContributionStaticThresholdStrategy(0.001);
-        BBSelectionStrategy bbStrategy = new BBStaticProportionTVW(0.5);
+        BBSelectionStrategy bbStrategy = new BBStaticProportionTVW(0.25);
         return featureConstruction(state, selIndis, ruleType, fitUB, fitLB,
                 preFiltering, contributionStrategy, bbStrategy);
     }
@@ -456,7 +474,7 @@ public class FeatureUtil {
         }
 
         if (BBs.isEmpty()) {
-            System.out.println("Exiting early, no remaining building blocks.");
+            state.output.message("Exiting early, no remaining building blocks.");
             return new GPNode[0];
         }
 
@@ -483,7 +501,7 @@ public class FeatureUtil {
 
         long jobSeed = ((GPRuleEvolutionState)state).getJobSeed();
         //String outputPath = initPath(state, preFiltering);
-        File BBInfoFile = new File("job." + jobSeed +
+        File BBInfoFile = new File("job." + jobSeed + " - " + state.generation +
                 " - "+ ruleType.name() + ".fcinfo.csv");
 
         writeBBContributions(BBInfoFile,BBs,selIndis,BBContributionStats,
@@ -505,7 +523,8 @@ public class FeatureUtil {
         bbStrategy.selectBuildingBlocks(BBs,selBBs,BBVotingWeightStats,selBBsVotingWeights);
 
         //write to file
-        File fcFile = new File("job." + jobSeed + " - "+ ruleType.name() + ".bbs.csv");
+        File fcFile = new File("job." + jobSeed + " - "
+                + state.generation+" - "+ ruleType.name() + ".bbs.csv");
         writeBBs(fcFile, selBBs, selBBsVotingWeights);
         state.output.message("Added "+selBBs.size()+" constructed features.");
         return selBBs.toArray(new GPNode[0]);
