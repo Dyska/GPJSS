@@ -26,6 +26,9 @@ public class TerminalERCUniform extends TerminalERC {
 
         terminal = ((GPRuleEvolutionState)state).pickTerminalRandom(subPopNum);
         children = terminal.children;
+        if (children.length > 0) {
+            constraints = 4;
+        }
     }
 
     @Override
@@ -34,6 +37,9 @@ public class TerminalERCUniform extends TerminalERC {
         int subPopNum = 0;
         terminal = ((GPRuleEvolutionState)state).pickTerminalRandom(subPopNum);
         children = terminal.children;
+        if (children.length > 0) {
+            constraints = 4;
+        }
 
         if (terminal instanceof ERC) {
             ERC ercTerminal = new DoubleERC();
@@ -51,6 +57,9 @@ public class TerminalERCUniform extends TerminalERC {
         }
         terminal = ((GPRuleEvolutionState)state).pickTerminalRandom(subPopNum);
         children = terminal.children;
+        if (children.length > 0) {
+            constraints = 4;
+        }
 
         if (terminal instanceof ERC) {
             ERC ercTerminal = new DoubleERC();

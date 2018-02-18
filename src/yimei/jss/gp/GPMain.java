@@ -14,7 +14,7 @@ public class GPMain {
 
     public static void main(String[] args) {
         boolean isTest = true;
-        int maxTests = 1;
+        int maxTests = 30;
         boolean isDynamic = true;
 
         String workingDirectory = (new File("")).getAbsolutePath();
@@ -28,8 +28,8 @@ public class GPMain {
                 gpRunArgs.add("-file");
                 if (isDynamic) {
                     String contributionSelectionStrategy = "score-0.001";
-                    String bbSelectionStrategy = "bb-0.25xTVW"; //FC
                     String terminalSelectionStrategy = "terminal-0.1xTVW"; //FS
+                    String bbSelectionStrategy = "bb-0.25xTVW"; //FC
                     int batchSize = 1;
                     int preAdaptiveGenerations = 5;
 
@@ -54,7 +54,7 @@ public class GPMain {
                     gpRunArgs.add("-p");
                     gpRunArgs.add("terminalSelectionStrategy="+terminalSelectionStrategy);
                     gpRunArgs.add("-p");
-                    for (int i = 0; i < 1 && i <= maxTests; ++i) {
+                    for (int i = 0; i < 30 && i <= maxTests; ++i) {
                         gpRunArgs.add("seed.0="+String.valueOf(i));
                         gpRunArgs.add("-p");
                         gpRunArgs.add("stat.file=job."+String.valueOf(i)+".out.stat");

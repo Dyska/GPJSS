@@ -9,6 +9,8 @@ package ec.gp.koza;
 import ec.*;
 import ec.gp.*;
 import ec.util.*;
+import yimei.jss.gp.terminal.AttributeGPNode;
+import yimei.jss.gp.terminal.TerminalERCUniform;
 
 /* 
  * KozaBuilder.java
@@ -161,18 +163,20 @@ public abstract class KozaBuilder extends GPNodeBuilder
             errorAboutNoNodeWithType(type, state);   // total failure
 
         // pick a terminal when we're at max depth or if there are NO nonterminals
-        if ((current+1 >= max) &&                                                       // Now pick if we're at max depth
+        // need to add terminal at 1 less than max depth because terminal may be constructed
+        // feature of depth 2 - this would violate max depth promise
+        if ((current >= max) &&                                                       // Now pick if we're at max depth
             // this will freak out the static checkers
             (triedTerminals = true) &&                                                  // [first set triedTerminals]
             terminals.length != 0)                                                      // AND if there are available terminal
             {
-            GPNode n = (GPNode)(terminals[state.random[thread].nextInt(terminals.length)].lightClone());
+            GPNode n = (terminals[state.random[thread].nextInt(terminals.length)].lightClone());
             n.resetNode(state,thread,set);  // give ERCs a chance to randomize
             n.argposition = (byte)argposition;
             n.parent = parent;
             return n;
             }
-                        
+
         // else pick a random node
         else
             {
@@ -182,6 +186,12 @@ public abstract class KozaBuilder extends GPNodeBuilder
             n.resetNode(state,thread,set);  // give ERCs a chance to randomize
             n.argposition = (byte)argposition;
             n.parent = parent;
+
+            if (n instanceof TerminalERCUniform) {
+                if (!(((TerminalERCUniform) n).getTerminal() instanceof AttributeGPNode)) {
+                    return n;
+                }
+            }
 
             // Populate the node...
             GPType[] childtypes = n.constraints(((GPInitializer)state.initializer)).childtypes;

@@ -7,6 +7,7 @@ import ec.gp.GPIndividual;
 import ec.gp.GPNode;
 import ec.gp.GPTree;
 import ec.multiobjective.MultiObjectiveFitness;
+import ec.rule.Rule;
 import ec.util.Parameter;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import yimei.jss.algorithm.featureconstruction.FCGPRuleEvolutionState;
@@ -367,7 +368,7 @@ public class FeatureUtil {
 
         writeSelFeatures(fsFile,selFeatures);
 
-        state.output.message("Selected "+selFeatures.size()+" features out of "+terminals.length);
+        state.output.message("Selected "+selFeatures.size()+" features out of "+terminals.length+".");
         return selFeatures.toArray(new GPNode[0]);
     }
 
@@ -468,6 +469,8 @@ public class FeatureUtil {
         DescriptiveStatistics votingWeightStat = initVotingWeightStat(selIndis, fitUB, fitLB);
 
         List<GPNode> BBs = buildingBlocks(state,selIndis, 2);
+
+        removeExistingTerminals(state, ruleType, BBs);
 
         if (preFiltering) {
             BBs = prefilterBBs(state,BBs);
@@ -806,6 +809,34 @@ public class FeatureUtil {
         List<GPNode> dupTerminalsRemovedBBs = filterDuplicateTerminalBBs(state,BBs);
         List<GPNode> conflictingDimensionsRemovedBBs = filterConflictingDimensionBBs(state,dupTerminalsRemovedBBs);
         return conflictingDimensionsRemovedBBs;
+    }
+
+    public static void removeExistingTerminals(EvolutionState state, RuleType ruleType, List<GPNode> BBs) {
+        int subPopNum = ruleType == RuleType.SEQUENCING ? 0 : 1;
+        GPNode[] terminals = ((TerminalsChangable)state).getTerminals(subPopNum);
+        //should also remove all BBs that have already been added to terminal set, no point
+        //in adding them again
+
+        List<GPNode> fcTerminals = new ArrayList<>();
+        for (GPNode t: terminals) {
+            if (t.children.length == 2) {
+                fcTerminals.add(t);
+            }
+        }
+
+        for (GPNode terminal: fcTerminals) {
+            String terminalString = terminal.makeCTree(false,true,true);
+            int foundIndex = -1;
+            for (int i = 0; i < BBs.size() && foundIndex == -1; ++i) {
+                GPNode bb = BBs.get(i);
+                if (terminalString.equals(bb.makeCTree(false,true,true))) {
+                    foundIndex = i;
+                }
+            }
+            if (foundIndex != -1) {
+                BBs.remove(foundIndex);
+            }
+        }
     }
 
     //Should remove all subtrees with duplicate terminals being used.

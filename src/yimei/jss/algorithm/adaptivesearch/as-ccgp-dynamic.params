@@ -6,11 +6,11 @@ parent.0 = ecsuite.params
 
 state =                                 yimei.jss.algorithm.adaptivesearch.ASGPRuleEvolutionState
 eval =                                  yimei.jss.niching.MultiPopCoevolutionaryClearingEvaluator
-eval.clearing = false
+eval.clearing =                         false
 eval.problem =                          yimei.jss.ruleoptimisation.RuleCoevolutionProblem
 eval.problem.data =                     yimei.jss.gp.data.DoubleData
 eval.problem.type =                     rosenbrock
-eval.problem.eval-model =               yimei.jss.ruleevaluation.MultipleRuleEvaluationModel
+eval.problem.eval-model =               yimei.jss.ruleevaluation.MultipleRuleHalfShopEvaluationModel
 eval.problem.eval-model.objectives =    1
 eval.problem.eval-model.objectives.0 =  mean-flowtime
 eval.problem.eval-model.rotate-sim-seed = true
@@ -33,9 +33,9 @@ quit-on-run-complete =                  false
 pop = ec.Population
 pop.subpops = 2
 pop.subpop.0 = ec.Subpopulation
-pop.subpop.0.size = 20
+pop.subpop.0.size = 512
 pop.subpop.1 = ec.Subpopulation
-pop.subpop.1.size = 20
+pop.subpop.1.size = 512
 
 breed.elite.0 = 10
 breed.elite.1 = 10
