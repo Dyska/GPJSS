@@ -28,12 +28,6 @@ public abstract class TerminalERC extends ERC {
 
     @Override
     public String toString() {
-        if (!(terminal instanceof AttributeGPNode)) {
-            //eg. (* NPT W)
-            return "("+terminal.toString()+" "+terminal.children[0].toString()+
-                    " "+terminal.children[1].toString()+")";
-        }
-
         return terminal.toString();
     }
 

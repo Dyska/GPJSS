@@ -80,7 +80,7 @@ public class RuleTest {
 
 	public SchedulingSet generateTestSet() {
         return SchedulingSet.generateSet(simSeed, testScenario,
-                testSetName, objectives, 1);
+                testSetName, objectives, 50);
     }
 
 	public void writeToCSV() {
