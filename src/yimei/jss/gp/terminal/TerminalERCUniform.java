@@ -25,6 +25,7 @@ public class TerminalERCUniform extends TerminalERC {
         }
 
         terminal = ((GPRuleEvolutionState)state).pickTerminalRandom(subPopNum);
+
         children = terminal.children;
         if (children.length > 0) {
             constraints = 4;
@@ -36,15 +37,10 @@ public class TerminalERCUniform extends TerminalERC {
         //Assume here we are dealing with simple gp
         int subPopNum = 0;
         terminal = ((GPRuleEvolutionState)state).pickTerminalRandom(subPopNum);
+
         children = terminal.children;
         if (children.length > 0) {
             constraints = 4;
-        }
-
-        if (terminal instanceof ERC) {
-            ERC ercTerminal = new DoubleERC();
-            ercTerminal.resetNode(state, thread);
-            terminal = ercTerminal;
         }
     }
 
@@ -55,16 +51,12 @@ public class TerminalERCUniform extends TerminalERC {
         if (set.toString().endsWith("1")) {
             subPopNum = 1;
         }
+
         terminal = ((GPRuleEvolutionState)state).pickTerminalRandom(subPopNum);
+
         children = terminal.children;
         if (children.length > 0) {
             constraints = 4;
-        }
-
-        if (terminal instanceof ERC) {
-            ERC ercTerminal = new DoubleERC();
-            ercTerminal.resetNode(state, thread, set);
-            terminal = ercTerminal;
         }
     }
 

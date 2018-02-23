@@ -46,7 +46,8 @@ public class ResultFileReader {
                         line = br.readLine(); //this will be either a fitness or collaborator rule
                         if (numPopulations == 2) {
                             //collaborator rule
-                            line = LispSimplifier.simplifyExpression(line);
+                            //line = LispSimplifier.simplifyExpression(line);
+                            line = line.trim();
 
                             if (i == 0) {
                                 collaborators[i] = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.ROUTING, line);
@@ -65,7 +66,8 @@ public class ResultFileReader {
                         br.readLine(); //Tree 0:
                         String expression = br.readLine();
 
-                        expression = LispSimplifier.simplifyExpression(expression);
+                        //expression = LispSimplifier.simplifyExpression(expression);
+                        expression = expression.trim();
 
                         if (i == 0) {
                             //subpop 0 is sequencing rules
@@ -107,7 +109,8 @@ public class ResultFileReader {
                 line = br.readLine(); //this will be either a fitness or collaborator rule
                 if (numPopulations == 2) {
                     //collaborator rule
-                    line = LispSimplifier.simplifyExpression(line);
+//                    line = LispSimplifier.simplifyExpression(line);
+                    line = line.trim();
                     if (i == 0) {
                         //subpop 0 is sequencing rules, so collab[0] is a routing rule
                         collaborators[i] = GPRule.readFromLispExpression(yimei.jss.rule.RuleType.ROUTING, line);
@@ -127,7 +130,8 @@ public class ResultFileReader {
                 br.readLine(); //Tree 0:
                 String expression = br.readLine();
 
-                expression = LispSimplifier.simplifyExpression(expression);
+                //expression = LispSimplifier.simplifyExpression(expression);
+                expression = expression.trim();
 
                 if (i == 0) {
                     //subpop 0 is sequencing rules
@@ -228,7 +232,8 @@ public class ResultFileReader {
                     br.readLine();
                     String expression = br.readLine();
 
-                    expression = LispSimplifier.simplifyExpression(expression);
+                    //expression = LispSimplifier.simplifyExpression(expression);
+                    expression = expression.trim();
                     expressions.add(expression);
                 }
             }
