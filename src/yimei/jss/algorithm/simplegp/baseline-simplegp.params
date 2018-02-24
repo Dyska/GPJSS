@@ -14,10 +14,11 @@ checkpoint-prefix = ec
 # ==============================
 # Basic evolution parameters
 # ==============================
-state = yimei.jss.algorithm.adaptivesearch.ASGPRuleEvolutionState
+state = yimei.jss.gp.GPRuleEvolutionState
 finish = ec.simple.SimpleFinisher
 exch = ec.simple.SimpleExchanger
 breed =	ec.simple.SimpleBreeder
+eval = ec.simple.SimpleEvaluator
 stat = ec.simple.SimpleStatistics
 stat.file = $out.stat
 #stat.num-children = 1
@@ -26,14 +27,12 @@ stat.do-generation = true
 stat.do-message = true
 
 generations = 51
-quit-on-run-complete = false
+quit-on-run-complete = true
 
 pop = ec.Population
 pop.subpops = 1
 pop.subpop.0 = ec.Subpopulation
-pop.subpop.0.size = 1024
-
-breed.elite.0 = 10
+pop.subpop.0.size =	1024
 
 # ==============================
 # GP general parameters
@@ -46,7 +45,7 @@ pop.subpop.0.species.ind.numtrees = 1
 pop.subpop.0.species.ind.tree.0 = ec.gp.GPTree
 pop.subpop.0.species.ind.tree.0.tc = tc0
 
-pop.subpop.0.species.fitness = yimei.jss.niching.ClearingMultiObjectiveFitness
+pop.subpop.0.species.fitness = ec.multiobjective.MultiObjectiveFitness
 pop.subpop.0.species.fitness.num-objectives = 1
 pop.subpop.0.species.fitness.maximize = false
 pop.subpop.0.duplicate-retries = 100
@@ -198,22 +197,11 @@ gp.fs.0.func.5 = yimei.jss.gp.function.Max
 gp.fs.0.func.5.nc = nc2
 gp.fs.0.func.6 = yimei.jss.gp.function.Min
 gp.fs.0.func.6.nc = nc2
-#gp.fs.0.func.7 = yimei.jss.gp.function.If
-#gp.fs.0.func.7.nc = nc3
-
-# ==============================
-# The output format
-# ==============================
-#gp.tree.print-style = c
-#pop.subpop.0.species.ind.tree.0.c-operators = false
-#gp.tree.print-style = dot
 
 # ==============================
 # The problem
 # ==============================
 
-eval = yimei.jss.niching.ClearingEvaluator
-eval.clearing = false
 eval.problem = yimei.jss.ruleoptimisation.RuleOptimizationProblem
 eval.problem.data = yimei.jss.gp.data.DoubleData
 eval.problem.eval-model = yimei.jss.ruleevaluation.SimpleEvaluationModel
@@ -224,8 +212,6 @@ eval.problem.eval-model.sim-models.0.util-level = 0.85
 eval.problem.eval-model.rotate-sim-seed = true
 eval.problem.eval-model.sim-models.0.num-jobs = 5000
 eval.problem.eval-model.sim-models.0.warmup-jobs = 1000
+eval.num-elites = 10
 
-ignorer = yimei.jss.feature.ignore.SimpleIgnorer
-adaptive-selection-adapt-population = true
-terminals-from =                        relative
-
+terminals-from = relative

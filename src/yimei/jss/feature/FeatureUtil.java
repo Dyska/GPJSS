@@ -410,7 +410,7 @@ public class FeatureUtil {
                                                    boolean preFiltering) {
         ContributionSelectionStrategy contributionStrategy =
                 new ContributionStaticThresholdStrategy(0.001);
-        BBSelectionStrategy bbStrategy = new BBStaticProportionTVW(0.25);
+        BBSelectionStrategy bbStrategy = new BBStaticProportionTVW(0.5);
         return featureConstruction(state, selIndis, ruleType, fitUB, fitLB,
                 preFiltering, contributionStrategy, bbStrategy);
     }

@@ -10,7 +10,7 @@ eval.clearing =                         false
 eval.problem =                          yimei.jss.ruleoptimisation.RuleCoevolutionProblem
 eval.problem.data =                     yimei.jss.gp.data.DoubleData
 eval.problem.type =                     rosenbrock
-eval.problem.eval-model =               yimei.jss.ruleevaluation.MultipleRuleHalfShopEvaluationModel
+eval.problem.eval-model =               yimei.jss.ruleevaluation.MultipleRuleEvaluationModel
 eval.problem.eval-model.objectives =    1
 eval.problem.eval-model.objectives.0 =  mean-flowtime
 eval.problem.eval-model.rotate-sim-seed = true
@@ -230,8 +230,6 @@ gp.fs.0.func.5 =                        yimei.jss.gp.function.Max
 gp.fs.0.func.5.nc =                     nc2
 gp.fs.0.func.6 =                        yimei.jss.gp.function.Min
 gp.fs.0.func.6.nc =                     nc2
-#gp.fs.0.func.7 =                       yimei.jss.gp.function.If
-#gp.fs.0.func.7.nc = nc3
 
 gp.fs.1.name =                          f1
 gp.fs.1.size =                          7
@@ -249,22 +247,7 @@ gp.fs.1.func.5 =                        yimei.jss.gp.function.Max
 gp.fs.1.func.5.nc =                     nc2
 gp.fs.1.func.6 =                        yimei.jss.gp.function.Min
 gp.fs.1.func.6.nc =                     nc2
-#gp.fs.0.func.7 =                       yimei.jss.gp.function.If
 
-
-# ==============================
-# The output format
-# ==============================
-#gp.tree.print-style =                  c
-#pop.subpop.0.species.ind.tree.0.c-operators = false
-#gp.tree.print-style =                  dot
-
-pre-generations =                       50
-pop-adapt-frac-elites =                 0
-pop-adapt-frac-adapted =                0.1
-feature-construction-adapt-population = true
 terminals-from =                        relative
 ignorer =                               yimei.jss.feature.ignore.SimpleIgnorer
-feature-construction-prefiltering = true
-feature-construction-timing = false
 
