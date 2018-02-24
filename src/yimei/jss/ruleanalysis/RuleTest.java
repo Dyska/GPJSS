@@ -106,14 +106,15 @@ public class RuleTest {
             long start = System.currentTimeMillis();
 
 //            result.validate(objectives);
-
+            System.out.println("Testing job." + i + ".out.stat");
             for (int j = 0; j < result.getGenerationalRules().size(); j++) {
                 AbstractRule[] generationalRules = result.getGenerationalRules(j);
                 AbstractRule routingRule = (numPopulations == 2) ? generationalRules[1] : new WIQ(yimei.jss.rule.RuleType.ROUTING);
                 generationalRules[0].calcFitness(result.getGenerationalTestFitness(j),null,testSet,routingRule,objectives);
-
-                System.out.println("Generation " + j + ": test fitness = " +
-                        result.getGenerationalTestFitness(j).fitness());
+//                if (j % 10 == 0) {
+//                    System.out.println("Generation " + j + ": test fitness = " +
+//                            result.getGenerationalTestFitness(j).fitness());
+//                }
             }
 
             long finish = System.currentTimeMillis();
